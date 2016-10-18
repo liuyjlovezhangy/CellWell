@@ -12,14 +12,14 @@ function process(full_filename, start_fresh_flag)
 
     % Plotting options
     
-    plot_well_segmentation_flag = 0;
-    plot_well_tracks_flag = 0;
-    plot_well_by_well_flag = 0;
-    plot_noise_detection_flag = 0;
-    plot_cell_segmentation_flag = 0;
-    plot_cell_tracking_flag = 0;
-    plot_cell_overlay_flag = 0;
-    plot_statistics_flag = 0;
+    plot_well_segmentation_flag = 1;
+    plot_well_tracks_flag = 1;
+    plot_well_by_well_flag = 1;
+    plot_noise_detection_flag = 1;
+    plot_cell_segmentation_flag = 1;
+    plot_cell_tracking_flag = 1;
+    plot_cell_overlay_flag = 1;
+    plot_statistics_flag = 1;
     
     make_movies = 1;
     
@@ -229,7 +229,7 @@ function process(full_filename, start_fresh_flag)
     end
     
     if plot_well_segmentation_flag
-        movie_file = plot_well_segmentation(well_segmentation_results_struct, im(:,:,:,end), well_segmentation_results_struct.otsu_idcs, make_movies, [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);
+        movie_file = cw.plot.well_segmentation(well_segmentation_results_struct, im(:,:,:,end), well_segmentation_results_struct.otsu_idcs, make_movies, [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);
         
         if make_movies
             copyfile(movie_file,[full_filename '__analysis_results/movies/']);
@@ -385,7 +385,7 @@ function process(full_filename, start_fresh_flag)
     % Plot well trajectories
     
     if plot_well_tracks_flag
-        movie_file = plot_well_tracks(im, well_tracking_results_struct.im_shifted, well_segmentation_results_struct, well_tracking_results_struct, make_movies, [full_filename '__analysis_results/runs/' analysis_timestamp '/movies'] );
+        movie_file = cw.plot.well_tracks(im, well_tracking_results_struct.im_shifted, well_segmentation_results_struct, well_tracking_results_struct, make_movies, [full_filename '__analysis_results/runs/' analysis_timestamp '/movies'] );
         
         if make_movies
             copyfile(movie_file,[full_filename '__analysis_results/movies/']);
@@ -395,7 +395,7 @@ function process(full_filename, start_fresh_flag)
     % plot well fluorescence
     
     if plot_well_by_well_flag
-        movie_file = plot_well_by_well(well_tracking_results_struct, make_movies, [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);        
+        movie_file = cw.plot.well_by_well(well_tracking_results_struct, make_movies, [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);        
         
         if make_movies
             %copyfile(movie_file,[full_filename '__analysis_results/movies/']);
@@ -456,7 +456,7 @@ function process(full_filename, start_fresh_flag)
     end
     
     if plot_noise_detection_flag
-        movie_file = plot_signal_detection( well_tracking_results_struct.wells,signal_detection_results_struct.detection_images,...
+        movie_file = cw.plot.signal_detection( well_tracking_results_struct.wells,signal_detection_results_struct.detection_images,...
             signal_detection_results_struct.is_noise_matrix,signal_detection_results_struct.detection_opts.thresh_mean,signal_detection_results_struct.detection_opts.thresh_stdev,make_movies,[full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);
         
         if make_movies
@@ -488,7 +488,7 @@ function process(full_filename, start_fresh_flag)
     end
     
     if plot_cell_segmentation_flag
-        movie_file = plot_cell_segmentation_and_tracking(0,well_tracking_results_struct.wells, ...
+        movie_file = cw.plot.cell_segmentation_and_tracking(0,well_tracking_results_struct.wells, ...
             cell_segmentation_results_struct, [], signal_detection_results_struct.is_noise_matrix, make_movies,...
             [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);
         
@@ -519,7 +519,7 @@ function process(full_filename, start_fresh_flag)
     end
     
     if plot_cell_tracking_flag
-        movie_file = plot_cell_segmentation_and_tracking('both',well_tracking_results_struct.wells, ...
+        movie_file = cw.plot.cell_segmentation_and_tracking('both',well_tracking_results_struct.wells, ...
             cell_segmentation_results_struct, cell_tracking_results_struct, signal_detection_results_struct.is_noise_matrix, make_movies,...
             [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);
         
@@ -529,7 +529,7 @@ function process(full_filename, start_fresh_flag)
     end
 
     if plot_cell_overlay_flag
-        movie_file = plot_cell_overlays(well_tracking_results_struct.wells, ...
+        movie_file = cw.plot.cell_overlays(well_tracking_results_struct.wells, ...
             signal_detection_results_struct, cell_segmentation_results_struct,...
             cell_tracking_results_struct, make_movies, [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);
         
