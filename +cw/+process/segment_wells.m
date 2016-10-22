@@ -74,6 +74,9 @@ function well_segmentation_results_struct = segment_wells( im_bf, o )
         multiWaitbar('Performing well segmentation...', frame_idx / num_frames);
     end
     
+    well_segmentation_results_struct.extra_border_x = propts.wseg_extra_border_x;
+    well_segmentation_results_struct.extra_border_y = propts.wseg_extra_border_y;
+    
     multiWaitbar('CloseAll');
 end
 

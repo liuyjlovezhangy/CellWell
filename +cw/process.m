@@ -29,21 +29,6 @@ function process(options)
 %     link_params.total_num_frames = size(im,3);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%% Set up data structures
-    
-    well_segmentation_results_struct = [];
-    frame = [];
-    
-    frame.mask = [];
-    frame = repmat(frame,[1,size(im,3)]);
-    
-    well_segmentation_results_struct.frame = frame;
-    well_segmentation_results_struct.well_tracks = [];
-    well_segmentation_results_struct.well_ids = [];
-    well_segmentation_results_struct.extra_border_x = propts.wseg_extra_border_x;
-    well_segmentation_results_struct.extra_border_y = propts.wseg_extra_border_y;
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Perform segmentation on each BF frame
     
     if propts.start_at <= 1 || ~exist([full_filename '__analysis_results/well_segmentation.mat'],'file')
