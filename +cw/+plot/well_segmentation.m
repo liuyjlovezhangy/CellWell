@@ -99,7 +99,7 @@ function movie_file = plot_well_segmentation( seg_results_struct, im, otsu_idcs,
                 
                 centroid = objects(obj_idx).Centroid;
 
-                if ~cw.analyze.well_criterion(objects(obj_idx))
+                if ~cw.process.well_criterion(objects(obj_idx))
                     plot(pts(:,1),pts(:,2),'r','LineWidth',2)
                 else
                     plot(pts(:,1),pts(:,2),'g','LineWidth',2)
@@ -140,7 +140,7 @@ function movie_file = plot_well_segmentation( seg_results_struct, im, otsu_idcs,
                     
                 centroid = objects(obj_idx).Centroid;
 
-                if ~cw.analyze.well_criterion(objects(obj_idx))
+                if ~cw.process.well_criterion(objects(obj_idx))
                     plot(pts(:,1),pts(:,2),'r','LineWidth',2)
                 else
                     plot(pts(:,1),pts(:,2),'g','LineWidth',2)

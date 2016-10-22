@@ -54,48 +54,49 @@ function main(options)
     %%% Run the processing on the movies
     %%%
     
-    processing_options.filename = options.filename;
-    
-    % convert start to the appropriate index from string
-    
-    sa = processing_options.start_at;
-    new_sa = 0;
-    
-    switch sa
-        case 'well segmentation'
-            new_sa = 1;
-        case 'well tracking'
-            new_sa = 2;
-        case 'noise detection'
-            new_sa = 3;
-        case 'cell segmentation'
-            new_sa = 4;
-        case 'cell tracking'
-            new_sa = 5;
-        otherwise
-            new_sa = 0;
-    end
-    options.processing_options.start_at = new_sa;
-    
-    % kill all intermediate .mats that are generated beyond the current
-    % step we want to start at
-    
-    mats = {'input_movie.mat','well_segmentation.mat',...
-        'well_tracking.mat','noise_detection.mat','cell_segmentation.mat',...
-        'cell_tracking.mat'};
-    
-    mats_to_delete = mats(new_sa+1:5);
-
-    for kill_idx = 1:numel(mats_to_delete)
-        kill_file = [full_filename '__analysis_results/' mats_to_delete{kill_idx}];
-        if exist(kill_file,'file')
-            delete(kill_file)
-        end
-    end
-    
-    % do it
-    
     if options.DO_PROCESSING
+        
+        processing_options.filename = options.filename;
+
+        % convert start to the appropriate index from string
+
+        sa = processing_options.start_at;
+
+        switch sa
+            case 'well segmentation'
+                new_sa = 1;
+            case 'well tracking'
+                new_sa = 2;
+            case 'noise detection'
+                new_sa = 3;
+            case 'cell segmentation'
+                new_sa = 4;
+            case 'cell tracking'
+                new_sa = 5;
+            otherwise
+                new_sa = 0;
+        end
+        options.processing_options.start_at = new_sa;
+
+        % kill all intermediate .mats that are generated beyond the current
+        % step we want to start at
+
+        mats = {'input_movie.mat','well_segmentation.mat',...
+            'well_tracking.mat','noise_detection.mat','cell_segmentation.mat',...
+            'cell_tracking.mat'};
+
+        mats_to_delete = mats(new_sa+1:5);
+
+        for kill_idx = 1:numel(mats_to_delete)
+            kill_file = [full_filename '__analysis_results/' mats_to_delete{kill_idx}];
+            if exist(kill_file,'file')
+                delete(kill_file)
+            end
+        end
+
+        % do it
+    
+    
         processing_options
         cw.process(options);
     end
