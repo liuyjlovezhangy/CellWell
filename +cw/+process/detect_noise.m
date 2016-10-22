@@ -1,5 +1,45 @@
-function [is_noise,im_filtered_list,im_filtered] = detect_noise( im, opts )
+function signal_detection_results_struct = detect_noise( well_tracking_results_struct, options )
     
+    num_wells = numel(well_tracking_results_struct.wells);
+    num_frames = size(well_tracking_results_struct.wells(1).im_well,3);
+    num_channels = size(well_tracking_results_struct.wells(1).im_well,4);
+    
+    multiWaitbar('CloseAll');
+    multiWaitbar('Detecting wells and frames that contain signal [cells]...',0);
+    
+    is_noise_matrix = zeros(num_wells,num_channels-1,num_frames); % well, channel, frame
+    detection_images = cell(1,num_wells);
+
+    for well_idx = 1:numel(well_tracking_results_struct.wells)
+        im_well = well_tracking_results_struct.wells(well_idx).im_well;
+
+        % entropy calc chops off pixels on img border due to artifacting
+        [~,~,sizing_im] = local( im_well(:,:,1,1),options );
+        cur_detection_image = zeros(size(sizing_im,1), size(sizing_im,2), num_frames, num_channels-1); 
+
+        for channel_idx = 1:num_channels-1 
+
+            [temp_noise_matrix,~,channel_im_filtered] = local( im_well(:,:,:,channel_idx), options );
+
+            is_noise_matrix(well_idx,channel_idx,:) = temp_noise_matrix;
+            cur_detection_image(:,:,:,channel_idx) = channel_im_filtered;
+
+        end
+
+        detection_images{well_idx} = cur_detection_image;
+
+        multiWaitbar('Detecting wells and frames that contain signal [cells]...',well_idx / numel(well_tracking_results_struct.wells));
+    end
+
+    signal_detection_results_struct.detection_images = detection_images;
+    signal_detection_results_struct.is_noise_matrix = is_noise_matrix;
+    signal_detection_results_struct.detection_opts = options;
+    
+    multiWaitbar('CloseAll');
+    drawnow
+end
+
+function [is_noise,im_filtered_list,im_filtered] = local(im,opts)
     % For this to work consistently, your images should be normalized across
     % the entire channel with something like mat2gray. The most important
     % part is that the maximum value is the maximum of the signal for the entire original image. You
@@ -7,31 +47,6 @@ function [is_noise,im_filtered_list,im_filtered] = detect_noise( im, opts )
 
     do_plot=0;
     gap = 0.1;
-
-    if ~isfield(opts,'thresh_mean')
-        opts.thresh_mean = 1.2;
-    end
-    if ~isfield(opts,'thresh_stdev')
-        opts.thresh_stdev = 0.5;
-    end
-    if ~isfield(opts,'do_wiener')
-        opts.do_wiener = 1;
-    end
-    if ~isfield(opts,'do_blur')
-        opts.do_blur = 1;
-    end
-    if ~isfield(opts,'blur_sigma')
-        opts.blur_sigma = 10;
-    end
-    if ~isfield(opts,'blur_hsize')
-        opts.blur_hsize = [10 10];
-    end
-    if ~isfield(opts,'blur_hsize')
-        opts.blur_hsize = [10 10];
-    end
-    if ~isfield(opts,'entropy_nsize')
-        opts.entropy_nsize = ones(9);
-    end
     
     plot_frame = 1;
     
@@ -57,7 +72,7 @@ function [is_noise,im_filtered_list,im_filtered] = detect_noise( im, opts )
             title('Intensity histogram')
     end
     
-    if opts.do_wiener
+    if opts.ndec_do_wiener
         for frame_idx = 1:size(im,3)
             im(:,:,frame_idx) = wiener2(im(:,:,frame_idx),[5 5]);
         end
@@ -67,7 +82,7 @@ function [is_noise,im_filtered_list,im_filtered] = detect_noise( im, opts )
         im = im(edge_sz:end-edge_sz,edge_sz:end-edge_sz,:);
     end
     
-    if do_plot && opts.do_wiener
+    if do_plot && opts.ndec_do_wiener
         subtightplot(2,3,3,gap)
             imagesc(im(:,:,plot_frame))
             colormap gray
@@ -77,17 +92,17 @@ function [is_noise,im_filtered_list,im_filtered] = detect_noise( im, opts )
             title('Wiener image')
     end
     
-    if opts.do_blur
-        h = fspecial('gaussian',opts.blur_hsize,opts.blur_sigma);
+    if opts.ndec_do_blur
+        h = fspecial('gaussian',opts.ndec_blur_hsize,opts.ndec_blur_sigma);
         im = imfilter(im,h);
         
-        edge_sz = ceil(max(opts.blur_hsize) ./ 2);
+        edge_sz = ceil(max(opts.ndec_blur_hsize) ./ 2);
         
         % edge effects
         im = im(edge_sz:end-edge_sz,edge_sz:end-edge_sz,:);
     end
     
-    if do_plot && opts.do_blur
+    if do_plot && opts.ndec_do_blur
         subtightplot(2,3,4,gap)
             imagesc(im(:,:,plot_frame))
             colormap gray
@@ -97,7 +112,7 @@ function [is_noise,im_filtered_list,im_filtered] = detect_noise( im, opts )
             title('Gaussian blur image')
     end
 
-    im_filtered = entropyfilt(im,opts.entropy_nsize);
+    im_filtered = entropyfilt(im,opts.ndec_entropy_nsize);
     im_filtered_list = reshape(im_filtered,[size(im_filtered,1) * size(im_filtered,2), size(im_filtered,3)])';
     
     if do_plot
@@ -135,7 +150,7 @@ function [is_noise,im_filtered_list,im_filtered] = detect_noise( im, opts )
     mean_entropy = nanmean(im_filtered_list,2);
     std_entropy = nanstd(im_filtered_list,0,2);
     
-    is_noise = allnans | ((mean_entropy < opts.thresh_mean) & (std_entropy < opts.thresh_stdev));
+    is_noise = allnans | ((mean_entropy < opts.ndec_thresh_mean) & (std_entropy < opts.ndec_thresh_stdev));
     is_noise = is_noise';
     
     if do_plot

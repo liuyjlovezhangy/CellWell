@@ -2,9 +2,9 @@ function test_cfg
     
     options = [];
 
-    options.DO_PROCESSING = 0;
+    options.DO_PROCESSING = 1;
     options.DO_ANALYSIS = 0;
-    options.DO_PLOTTING = 1;
+    options.DO_PLOTTING = 0;
     
     options.NUKE_IT = 0; %%% DESTROY ALL OLD OUTPUT DATA/MOVIES INCL OLD RUNS
     options.NUKE_WARN = 0; %%% Pops up a box every time when run with NUKE_IT=1 to ask
@@ -35,10 +35,10 @@ function test_cfg
     %%% What part of the processing would you like to start from?
     % Uncomment the line you are interested in (and comment out others)
     
-    processing_options.start_at = 0;
+%     processing_options.start_at = 0;
 %     processing_options.start_at = 'well segmentation';
 %     processing_options.start_at = 'well tracking';
-%     processing_options.start_at = 'noise detection';
+    processing_options.start_at = 'noise detection';
 %     processing_options.start_at = 'cell segmentation';
 %     processing_options.start_at = 'cell tracking';
     

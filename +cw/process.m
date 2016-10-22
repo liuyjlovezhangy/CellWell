@@ -40,7 +40,6 @@ function process(options)
         disp('Saving well segmentation results...')
         
         save([full_filename '__analysis_results/well_segmentation.mat'],'well_segmentation_results_struct')
-        %copyfile([full_filename '__analysis_results/well_segmentation.mat'],[full_filename '__analysis_results/runs/' analysis_timestamp,'/well_segmentation.mat']);
     else
         disp('Loading previous well segmentation...')
         
@@ -66,60 +65,25 @@ function process(options)
         well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
     end
     
-    return
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Well-by-well detection of signal presence
     
     if ~exist([full_filename '__analysis_results/noise_detection.mat'],'file') || start_fresh_flag
         
         disp('Detecting wells and frames with signal in each channel...')
-        
-        h = waitbar(0,'Detecting wells and frames that contain signal [cells]...');
 
-        num_wells = numel(well_tracking_results_struct.wells);
-
-        is_noise_matrix = zeros(num_wells,size(im,4)-1,size(im,3)); % well, channel, frame
-        detection_images = cell(1,num_wells);
-
-        for well_idx = 1:numel(well_tracking_results_struct.wells)
-            im_well = well_tracking_results_struct.wells(well_idx).im_well;
-
-            % entropy calc chops off pixels on img border due to artifacting
-            [~,~,sizing_im] = cw.analyze.detect_noise( im_well(:,:,1,1),detection_opts );
-            cur_detection_image = zeros(size(sizing_im,1), size(sizing_im,2), size(im_well,3), size(im,4)-1); 
-
-            for channel_idx = 1:size(im,4)-1 
-
-                [temp_noise_matrix,~,channel_im_filtered] = cw.analyze.detect_noise( im_well(:,:,:,channel_idx), detection_opts );
-
-                is_noise_matrix(well_idx,channel_idx,:) = temp_noise_matrix;
-                cur_detection_image(:,:,:,channel_idx) = channel_im_filtered;
-
-            end
-
-            detection_images{well_idx} = cur_detection_image;
-
-            waitbar(well_idx / numel(well_tracking_results_struct.wells));
-        end
-
-        signal_detection_results_struct.detection_images = detection_images;
-        signal_detection_results_struct.is_noise_matrix = is_noise_matrix;
-        signal_detection_results_struct.detection_opts = detection_opts;
-
-        close(h);
-        drawnow
+        signal_detection_results_struct = cw.process.detect_noise( well_tracking_results_struct, propts );
         
         disp('Saving signal detection results....')
         
         save([full_filename '__analysis_results/noise_detection.mat'],'signal_detection_results_struct')
-        %copyfile([full_filename '__analysis_results/noise_detection.mat'],[full_filename '__analysis_results/runs/' analysis_timestamp,'/noise_detection.mat']);
-        
     else
         disp('Loading previous signal detection data...')
         
         signal_detection_results_struct = importdata([full_filename '__analysis_results/noise_detection.mat']);
     end
+    
+    return
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Cell segmentation
