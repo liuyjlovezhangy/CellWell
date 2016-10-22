@@ -87,7 +87,7 @@ function main(options)
             'well_tracking.mat','noise_detection.mat','cell_segmentation.mat',...
             'cell_tracking.mat'};
 
-        mats_to_delete = mats(new_sa+1:5);
+        mats_to_delete = mats((new_sa+1):5);
 
         for kill_idx = 1:numel(mats_to_delete)
             kill_file = [full_filename '__analysis_results/' mats_to_delete{kill_idx}];
