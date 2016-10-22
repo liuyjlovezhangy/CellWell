@@ -1,20 +1,91 @@
-function process(options)
+function plotting(options)
 
-    proptions = options.processing_options;
-
-    disp('PROCESSING MOVIE...')
-
-    multiWaitbar('CloseAll');
     
-    full_filename = proptions.filename;
+    % Imaging options
+    %%%%%%%%%%%%%%% THIS SHOULD BE USER DEFINED PER MOVIE
+    signal_channel = 1;
+    bf_channel = 4; 
+    
+    % Well segmentation options
+    
+    num_otsu_levels = 2;
+
+    % How much bigger are the wells than the segmentation mask finds?
+    
+    extra_border_x = 3;
+    extra_border_y = 5;
+
+    % noise detection parameters
+    
+    detection_opts.thresh_mean = 1;
+    detection_opts.thresh_stdev = 0.5;
+    detection_opts.do_wiener = 1;
+    detection_opts.do_blur = 1;
+    detection_opts.blur_sigma = 10;
+    detection_opts.blur_hsize = [10 10];
+    detection_opts.entropy_nsize = ones(9);
+    
+    % options to decide if a well was segmented correctly
+    
+    [~,o] = cw.analyze.well_criterion();
+    
+    % cell segmentation
+    
+    cell_segmentation_opts.adaptive_thresh_scale = 1.5;
+    cell_segmentation_opts.tracking_params.threshold_density = 0.1;
+    cell_segmentation_opts.tracking_params.peak_stringency = 'low';
+    cell_segmentation_opts.tracking_params.threshold_smoothing = 'off';
+
+    cell_segmentation_opts.min_cell_area = 10;
+    
+    cell_segmentation_opts.watershedding = [1 1 1];
+    cell_segmentation_opts.close_radius = [1 1 4];
+    
+    % cell tracking
+    
+    link_params.mode = 'conservative';
+    link_params.searchrad = 10;
+    link_params.gap_close = 0;
+    
+    link_params.min_track_len = 3;
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Directory setup and detection of progress
+    
+    [path_name,filename,ext] = fileparts(full_filename);
+    
+    mkdir([full_filename '__analysis_results'])
+    mkdir([full_filename '__analysis_results/movies'])
+    mkdir([full_filename '__analysis_results/runs'])
+    
+%     analysis_timestamp =
+%     strrep(datestr(datetime('now','TimeZone','local','Format','d-MMM-y HH:mm:ss')),':','-'); % only supported by r2014b and above
+    analysis_timestamp = strrep(datestr(now),':','-');    
+    mkdir([full_filename '__analysis_results/runs/' analysis_timestamp])
+    mkdir([full_filename '__analysis_results/runs/' analysis_timestamp '/movies'])
+    
+    if start_fresh_flag
+        delete([full_filename '__analysis_results/*.avi'])
+    end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Load movie 
 
-    if ~exist([full_filename '__analysis_results/movie.mat'],'file')
+    if ~exist([full_filename '__analysis_results/movie.mat'],'file') || start_fresh_flag
         disp('Loading movie from image file...')
         
         im = zloadim(full_filename,1);
+        
+        % Make it so the bf channel is the last one
+        % Signal channel should be blue
+
+        channel_order = 1:size(im,4);
+        channel_order((channel_order == bf_channel) | (channel_order == signal_channel)) = [];
+        channel_order = [channel_order, signal_channel, bf_channel];
+
+        channel_order(channel_order == bf_channel) = [];
+        channel_order = [channel_order, bf_channel];
+        im = im(:,:,:,channel_order);
         
         save([full_filename '__analysis_results/movie.mat'],'im')
         
@@ -283,6 +354,32 @@ function process(options)
         well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
     end
     
+%     for well_idx = 1:numel(well_tracking_results_struct.wells)
+%         well_tracking_results_struct.wells(well_idx).im_well = mat4D_to_gray(well_tracking_results_struct.wells(well_idx).im_well);
+%     end
+    
+%     well_tracking_results_struct.im_shifted = mat4D_to_gray(well_tracking_results_struct.im_shifted);
+    
+    % Plot well trajectories
+    
+    if plot_well_tracks_flag
+        movie_file = cw.plot.well_tracks(im, well_tracking_results_struct.im_shifted, well_segmentation_results_struct, well_tracking_results_struct, make_movies, [full_filename '__analysis_results/runs/' analysis_timestamp '/movies'] );
+        
+        if make_movies
+            copyfile(movie_file,[full_filename '__analysis_results/movies/']);
+        end
+    end
+    
+    % plot well fluorescence
+    
+    if plot_well_by_well_flag
+        movie_file = cw.plot.well_by_well(well_tracking_results_struct, make_movies, [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);        
+        
+        if make_movies
+            %copyfile(movie_file,[full_filename '__analysis_results/movies/']);
+        end
+    end
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Well-by-well detection of signal presence
     
@@ -336,6 +433,15 @@ function process(options)
         signal_detection_results_struct = importdata([full_filename '__analysis_results/noise_detection.mat']);
     end
     
+    if plot_noise_detection_flag
+        movie_file = cw.plot.signal_detection( well_tracking_results_struct.wells,signal_detection_results_struct.detection_images,...
+            signal_detection_results_struct.is_noise_matrix,signal_detection_results_struct.detection_opts.thresh_mean,signal_detection_results_struct.detection_opts.thresh_stdev,make_movies,[full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);
+        
+        if make_movies
+            copyfile(movie_file,[full_filename '__analysis_results/movies/']);
+        end
+    end
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Cell segmentation
         
@@ -358,6 +464,16 @@ function process(options)
         cell_segmentation_results_struct = importdata([full_filename '__analysis_results/cell_segmentation.mat']);
         
     end
+    
+    if plot_cell_segmentation_flag
+        movie_file = cw.plot.cell_segmentation_and_tracking(0,well_tracking_results_struct.wells, ...
+            cell_segmentation_results_struct, [], signal_detection_results_struct.is_noise_matrix, make_movies,...
+            [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);
+        
+        if make_movies
+            copyfile(movie_file,[full_filename '__analysis_results/movies/']);
+        end
+    end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Cell tracking
@@ -379,6 +495,31 @@ function process(options)
         
         cell_tracking_results_struct = importdata([full_filename '__analysis_results/cell_tracking.mat']);
     end
+    
+    if plot_cell_tracking_flag
+        movie_file = cw.plot.cell_segmentation_and_tracking('both',well_tracking_results_struct.wells, ...
+            cell_segmentation_results_struct, cell_tracking_results_struct, signal_detection_results_struct.is_noise_matrix, make_movies,...
+            [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);
+        
+        if make_movies
+            copyfile(movie_file,[full_filename '__analysis_results/movies/']);
+        end
+    end
+
+    if plot_cell_overlay_flag
+        movie_file = cw.plot.cell_overlays(well_tracking_results_struct.wells, ...
+            signal_detection_results_struct, cell_segmentation_results_struct,...
+            cell_tracking_results_struct, make_movies, [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);
+        
+        if make_movies
+            copyfile(movie_file,[full_filename '__analysis_results/movies/']);
+        end
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Data analysis
+    
+    cw.analyze.final_analysis(well_tracking_results_struct,signal_detection_results_struct,cell_segmentation_results_struct,cell_tracking_results_struct);
 end
 
 
