@@ -68,7 +68,7 @@ function process(options)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Well-by-well detection of signal presence
     
-    if ~exist([full_filename '__analysis_results/noise_detection.mat'],'file') || start_fresh_flag
+    if propts.start_at <= 3 || ~exist([full_filename '__analysis_results/noise_detection.mat'],'file') 
         
         disp('Detecting wells and frames with signal in each channel...')
 
@@ -83,24 +83,24 @@ function process(options)
         signal_detection_results_struct = importdata([full_filename '__analysis_results/noise_detection.mat']);
     end
     
-    return
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Cell segmentation
         
-    if ~exist([full_filename '__analysis_results/cell_segmentation.mat'],'file') || start_fresh_flag
+    if propts.start_at <= 4 || ~exist([full_filename '__analysis_results/cell_segmentation.mat'],'file')
         
         disp('Segmenting cells in each well...')
 
-        cell_segmentation_results_struct = cw.analyze.segment_cells( well_tracking_results_struct, signal_detection_results_struct, cell_segmentation_opts );
+        cell_segmentation_results_struct = cw.process.segment_cells( well_tracking_results_struct, ...
+            signal_detection_results_struct, propts );
         
         disp('Cleaning up segmentation....')
-        cell_segmentation_results_struct = cw.analyze.clean_up_cell_segmentation( cell_segmentation_results_struct, [] );
+        
+        cell_segmentation_results_struct = cw.process.clean_up_cell_segmentation( cell_segmentation_results_struct, [] );
        
         disp('Saving cell segmentation results....')
         
         save([full_filename '__analysis_results/cell_segmentation.mat'],'cell_segmentation_results_struct')
-        %copyfile([full_filename '__analysis_results/cell_segmentation.mat'],[full_filename '__analysis_results/runs/' analysis_timestamp,'/cell_segmentation.mat'])
+
     else
         disp('Loading previous cell segmentation data...')
         
@@ -111,22 +111,20 @@ function process(options)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Cell tracking
     
-    if ~exist([full_filename '__analysis_results/cell_tracking.mat'],'file') || start_fresh_flag
+    if propts.start_at <= 5 || ~exist([full_filename '__analysis_results/cell_tracking.mat'],'file')
         
         disp('Tracking cells in each well...')
         
-        cell_tracking_results_struct = cw.analyze.track_cells( cell_segmentation_results_struct, link_params );
-        
-        % save
+        cell_tracking_results_struct = cw.process.track_cells( cell_segmentation_results_struct, link_params );
         
         disp('Saving cell tracking results....')
         
         save([full_filename '__analysis_results/cell_tracking.mat'],'cell_tracking_results_struct')
-        %copyfile([full_filename '__analysis_results/cell_tracking.mat'],[full_filename '__analysis_results/runs/' analysis_timestamp,'/cell_tracking.mat'])
+
     else
-        disp('Loading previous cell tracking...')
+%         disp('Loading previous cell tracking...')
         
-        cell_tracking_results_struct = importdata([full_filename '__analysis_results/cell_tracking.mat']);
+%         cell_tracking_results_struct = importdata([full_filename '__analysis_results/cell_tracking.mat']);
     end
 end
 

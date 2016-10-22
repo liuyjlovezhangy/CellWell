@@ -1,4 +1,4 @@
-function cell_segmentation_results_struct = segment_cells( well_tracking_results_struct, signal_detection_results_struct, cell_segmentation_opts )
+function cell_segmentation_results_struct = segment_cells( well_tracking_results_struct, signal_detection_results_struct, options )
 
     num_wells = numel(well_tracking_results_struct.wells);
     num_frames = size(well_tracking_results_struct.wells(1).im_well,3);
@@ -51,8 +51,8 @@ function cell_segmentation_results_struct = segment_cells( well_tracking_results
                     
                     [cur_threshold_levels{frame_idx,channel_idx}.level, cur_threshold_levels{frame_idx,channel_idx}.level_low, cur_threshold_levels{frame_idx,channel_idx}.level_high, ...
                         cur_thresh_xvals{frame_idx,channel_idx}, cur_thresh_yvals{frame_idx,channel_idx}] = ...
-                        cw.analyze.adaptiveThresholdFinder(cur_well_im(:,:,frame_idx,channel_idx), cell_segmentation_opts.adaptive_thresh_scale,...
-                        cell_segmentation_opts.tracking_params, levels_prev);
+                        cw.process.adaptiveThresholdFinder(cur_well_im(:,:,frame_idx,channel_idx), options.cseg_adaptive_thresh_scale,...
+                        options.cseg_tracking_params, levels_prev);
 
                     cur_cell_mask = threshold3D(cur_well_im(:,:,frame_idx,channel_idx), cur_threshold_levels{frame_idx,channel_idx}.level);
 
@@ -60,15 +60,15 @@ function cell_segmentation_results_struct = segment_cells( well_tracking_results
 
                     % link together objects
 
-                    se = strel('disk',cell_segmentation_opts.close_radius(channel_idx));
+                    se = strel('disk',options.cseg_close_radius(channel_idx));
                     cur_cell_mask = imclose(cur_cell_mask,se);
 
                     % Clear very small objects
-                    cur_cell_mask = bwareaopen(cur_cell_mask, cell_segmentation_opts.min_cell_area);
+                    cur_cell_mask = bwareaopen(cur_cell_mask, options.cseg_min_cell_area);
 
                     im_seg = cur_well_im(:,:,frame_idx,channel_idx) .* cur_cell_mask;
 
-                    if cell_segmentation_opts.watershedding(channel_idx)
+                    if options.cseg_watershedding(channel_idx)
                         % watershed to split up close cells
                         
 %                         D = bwdist(~cur_cell_mask);
@@ -293,7 +293,7 @@ function cell_segmentation_results_struct = segment_cells( well_tracking_results
     cell_segmentation_results_struct.thresh_yvals = all_thresh_yvals;
     cell_segmentation_results_struct.detected_cell_props_nowater = detected_cell_props_nowater;
     cell_segmentation_results_struct.detected_cell_props_water = detected_cell_props_water;
-    cell_segmentation_results_struct.cell_segmentation_opts = cell_segmentation_opts;
+    cell_segmentation_results_struct.cell_segmentation_opts = options;
     
     multiWaitbar('CloseAll');
     drawnow

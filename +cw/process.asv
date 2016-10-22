@@ -71,31 +71,22 @@ function process(options)
     if ~exist([full_filename '__analysis_results/noise_detection.mat'],'file') || start_fresh_flag
         
         disp('Detecting wells and frames with signal in each channel...')
-        
-        h = waitbar(0,'Detecting wells and frames that contain signal [cells]...');
 
-        signal_detection_results_struct = detect_noise( well_tracking_results_struct, options )
-
-        close(h);
-        drawnow
+        signal_detection_results_struct = cw.process.detect_noise( well_tracking_results_struct, propts );
         
         disp('Saving signal detection results....')
         
         save([full_filename '__analysis_results/noise_detection.mat'],'signal_detection_results_struct')
-        %copyfile([full_filename '__analysis_results/noise_detection.mat'],[full_filename '__analysis_results/runs/' analysis_timestamp,'/noise_detection.mat']);
-        
     else
         disp('Loading previous signal detection data...')
         
         signal_detection_results_struct = importdata([full_filename '__analysis_results/noise_detection.mat']);
     end
     
-    return
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Cell segmentation
         
-    if ~exist([full_filename '__analysis_results/cell_segmentation.mat'],'file') || start_fresh_flag
+    if ~exist([full_filename '__analysis_results/cell_segmentation.mat'],'file')
         
         disp('Segmenting cells in each well...')
 
@@ -114,6 +105,8 @@ function process(options)
         cell_segmentation_results_struct = importdata([full_filename '__analysis_results/cell_segmentation.mat']);
         
     end
+    
+    return
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Cell tracking

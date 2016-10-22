@@ -23,7 +23,7 @@ function test_cfg
     options.tracking_channels = [2 3];
     options.bf_channel = 4;
     
-    options.channel_names = {'SYTOX','Brightfield'};
+    options.channel_names = {'SYTOX','K562','(CAR)T cell','Brightfield'};
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,9 +38,9 @@ function test_cfg
 %     processing_options.start_at = 0;
 %     processing_options.start_at = 'well segmentation';
 %     processing_options.start_at = 'well tracking';
-    processing_options.start_at = 'noise detection';
+%     processing_options.start_at = 'noise detection';
 %     processing_options.start_at = 'cell segmentation';
-%     processing_options.start_at = 'cell tracking';
+    processing_options.start_at = 'cell tracking';
     
     %%% Well segmentation parameters
     

@@ -29,7 +29,7 @@ function cell_tracking_results_struct = track_cells( cell_segmentation_results_s
             if ~isempty(localization_array)
                 % link the cell positions frame-to-frame
 
-                [cell_tracks,cell_ids] = cw.analyze.simple_tracking(localization_array, link_params );
+                [cell_tracks,cell_ids] = cw.process.simple_tracking(localization_array, link_params );
 
 %                 linked_object_cell = assign_tracks_to_objects( cell_tracks, cell_ids, objects_cell );
                 
