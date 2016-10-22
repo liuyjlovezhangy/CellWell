@@ -1,4 +1,4 @@
-function cell_tracking_results_struct = track_cells( cell_segmentation_results_struct, link_params )
+function cell_tracking_results_struct = track_cells( cell_segmentation_results_struct, propts )
     num_wells = numel(cell_segmentation_results_struct.cell_masks_nowater);
     num_channels = size(cell_segmentation_results_struct.detected_cell_props_nowater,3);
     num_frames = size(cell_segmentation_results_struct.detected_cell_props_nowater,2);
@@ -7,6 +7,10 @@ function cell_tracking_results_struct = track_cells( cell_segmentation_results_s
     cell_tracking_results_struct.cell_tracks = cell(num_wells,num_channels);
     cell_tracking_results_struct.linked_object_cells = cell(num_wells,num_channels);
 
+    link_params.mode = propts.ctrk_mode;
+    link_params.searchrad = propts.ctrk_searchrad;
+    link_params.gap_close = propts.ctrk_gap_close;
+    
     % build a list of all cell locations throughout time
 
     for well_idx = 1:num_wells
