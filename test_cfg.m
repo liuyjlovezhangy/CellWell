@@ -2,7 +2,7 @@ function test_cfg
     
     options = [];
 
-    options.DO_PROCESSING = 1;
+    options.DO_PROCESSING = 0;
     options.DO_ANALYSIS = 0;
     options.DO_PLOTTING = 1;
     

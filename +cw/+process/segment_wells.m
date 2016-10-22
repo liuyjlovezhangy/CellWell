@@ -13,8 +13,8 @@ function well_segmentation_results_struct = segment_wells( im_bf, o )
 
         %%% Find otsu threshold levels and binarize
 
-%         [IDX,~,well_segmentation_results_struct.otsu_idcs] = otsu(im_bf_slice,o.wseg_num_otsu_levels);
-        IDX = otsu(im_bf_slice,o.wseg_num_otsu_levels);
+        [IDX,~,well_segmentation_results_struct.otsu_idcs{frame_idx}] = otsu(im_bf_slice,o.wseg_num_otsu_levels);
+%         IDX = otsu(im_bf_slice,o.wseg_num_otsu_levels);
 
         im_mask_thresh = IDX == o.wseg_num_otsu_levels;
 

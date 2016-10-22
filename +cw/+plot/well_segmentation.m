@@ -4,7 +4,7 @@ function movie_file = plot_well_segmentation( seg_results_struct, im, otsu_idcs,
 
     if make_movies
         writerObj = VideoWriter(movie_file);
-        writerObj.FrameRate = 5;
+        writerObj.FrameRate = 8;
         writerObj.Quality = 100;
         open(writerObj);
     end
@@ -41,8 +41,10 @@ function movie_file = plot_well_segmentation( seg_results_struct, im, otsu_idcs,
             ylabel('# of pixels')
             title('Otsu thresholding')
 
-            for idcs_idx = 1:numel(otsu_idcs)
-                line([otsu_idcs(idcs_idx) otsu_idcs(idcs_idx)],ylim,'LineStyle','--','Color','r','LineWidth',3)
+            oid = otsu_idcs{frame_idx};
+            
+            for idcs_idx = 1:numel(oid)
+                line([oid(idcs_idx) oid(idcs_idx)],ylim,'LineStyle','--','Color','r','LineWidth',3)
             end
 
             axis tight
