@@ -6,7 +6,7 @@ function test_cfg
     options.DO_ANALYSIS = 0;
     options.DO_PLOTTING = 0;
     
-    options.NUKE_IT = 1; %%% DESTROY ALL OLD OUTPUT DATA/MOVIES INCL OLD RUNS
+    options.NUKE_IT = 0; %%% DESTROY ALL OLD OUTPUT DATA/MOVIES INCL OLD RUNS
     options.NUKE_WARN = 0; %%% Pops up a box every time when run with NUKE_IT=1 to ask
 
     options.filename = 'movies/Timelapse01.ome.tiff';
@@ -21,13 +21,12 @@ function test_cfg
     %%% What part of the processing would you like to start from?
     % Uncomment the line you are interested in (and comment out others)
     
-    processing_options.start_at = 0;
-%     options.start_at = 'well segmentation';
-%     options.start_at = 'well tracking';
-%     options.start_at = 'noise detection';
-%     options.start_at = 'cell segmentation';
-%     options.start_at = 'cell tracking';
-%     options.start_at = 'analysis';
+%     processing_options.start_at = 0;
+%     processing_options.start_at = 'well segmentation';
+    processing_options.start_at = 'well tracking';
+%     processing_options.start_at = 'noise detection';
+%     processing_options.start_at = 'cell segmentation';
+%     processing_options.start_at = 'cell tracking';
     
     %%% Info related to movie
     
@@ -44,6 +43,8 @@ function test_cfg
     %%% Well segmentation parameters
     
     processing_options.correct_rotation = 0; %%% WARNING: NOT RIGOROUSLY TESTED
+    processing_options.wseg_close_size = 10;
+    processing_options.wseg_min_size = 2000;
     processing_options.wseg_num_otsu_levels = 2;
     processing_options.wseg_extra_border_x = 3;
     processing_options.wseg_extra_border_y = 5;

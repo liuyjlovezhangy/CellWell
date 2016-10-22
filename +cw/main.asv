@@ -56,10 +56,13 @@ function main(options)
     
     processing_options.filename = options.filename;
     
-    % convert start to the appropriate index from string
+    % convert start to the appropriate index
     
     sa = processing_options.start_at;
     new_sa = 0;
+    
+    mats_to_delete = {'input_movie.mat','well_segmentation.mat',...
+        'well_tracking.mat','noise_detection.mat',};
     
     switch sa
         case 'well segmentation'
@@ -77,30 +80,12 @@ function main(options)
     end
     options.processing_options.start_at = new_sa;
     
-    % kill all intermediate .mats that are generated beyond the current
-    % step we want to start at
-    
-    mats = {'input_movie.mat','well_segmentation.mat',...
-        'well_tracking.mat','noise_detection.mat','cell_segmentation.mat',...
-        'cell_tracking.mat'};
-    
-    mats_to_delete = mats(new_sa+1:5);
-
-    for kill_idx = 1:numel(mats_to_delete)
-        kill_file = [full_filename '__analysis_results/' mats_to_delete{kill_idx}];
-        if exist(kill_file,'file')
-            delete(kill_file)
-        end
-    end
-    
-    % do it
-    
     if options.DO_PROCESSING
         processing_options
         cw.process(options);
     end
     
-    %%% Copy all processing intermediates to runs/ folder
+    %%% Copy all processing intermediates to runs/
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,7 +99,7 @@ function main(options)
         cw.analyze(options);
     end
     
-    %%% Copy all analysis to runs/ folder
+    %%% Copy all analysis to runs/
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -128,5 +113,5 @@ function main(options)
         cw.plotting(options);
     end
     
-    %%% Copy all movies to runs/ folder
+    %%% Copy all movies to runs/
 end

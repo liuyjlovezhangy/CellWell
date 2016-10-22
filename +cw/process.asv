@@ -16,7 +16,7 @@ function process(options)
         
         im = zloadim(full_filename,1);
         
-        save([full_filename '__analysis_results/input_movie.mat'],'im')
+        save([full_filename '__analysis_results/movie.mat'],'im')
         
     else
         disp('Loading movie from mat...')
@@ -48,7 +48,10 @@ function process(options)
     
     if propts.start_at <= 1 || ~exist([full_filename '__analysis_results/well_segmentation.mat'],'file')
     
-        well_segmentation_results_struct = cw.process.segment_wells( im(:,:,:,propts.bf_channel), propts );
+        
+
+        close(h);
+        drawnow
         
         disp('Saving well segmentation results...')
         
@@ -60,7 +63,13 @@ function process(options)
         well_segmentation_results_struct = importdata([full_filename '__analysis_results/well_segmentation.mat']);
     end
     
-    return
+    if plot_well_segmentation_flag
+        movie_file = cw.plot.well_segmentation(well_segmentation_results_struct, im(:,:,:,end), well_segmentation_results_struct.otsu_idcs, make_movies, [full_filename '__analysis_results/runs/' analysis_timestamp '/movies']);
+        
+        if make_movies
+            copyfile(movie_file,[full_filename '__analysis_results/movies/']);
+        end
+    end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Perform well tracking to link wells from frame to frame
