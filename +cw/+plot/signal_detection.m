@@ -48,7 +48,7 @@ function movie_file = plot_signal_detection( well_data,detection_images,is_noise
                     set(gca,'Ydir','Reverse')
                     axis off
 
-                    plot_noise_box(is_noise_matrix(well_idx,channel_idx,frame_idx));
+                    cw.plot.noise_box(is_noise_matrix(well_idx,channel_idx,frame_idx));
 
                     if channel_idx==1
                         title('Raw image')
@@ -70,7 +70,7 @@ function movie_file = plot_signal_detection( well_data,detection_images,is_noise
                     set(gca,'Ydir','Reverse')
                     axis off
 
-                    plot_noise_box(is_noise_matrix(well_idx,channel_idx,frame_idx));
+                    cw.plot.noise_box(is_noise_matrix(well_idx,channel_idx,frame_idx));
 
                     if channel_idx==1
                         title('Filtered image')

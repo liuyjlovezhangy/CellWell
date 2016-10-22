@@ -181,7 +181,7 @@ function movie_file = plot_cell_overlays(wells, signal_detection_results_struct,
         set(gca,'Ydir','Reverse')
         axis off
 
-        plot_noise_box(~any(squeeze(~is_noise_matrix(well_idx,:,frame_idx))));
+        cw.plot.noise_box(~any(squeeze(~is_noise_matrix(well_idx,:,frame_idx))));
 
         freezeColors
     end

@@ -12,14 +12,13 @@ function process(full_filename, start_fresh_flag)
 
     % Plotting options
     
-    plot_well_segmentation_flag = 1;
-    plot_well_tracks_flag = 1;
-    plot_well_by_well_flag = 1;
-    plot_noise_detection_flag = 1;
-    plot_cell_segmentation_flag = 1;
-    plot_cell_tracking_flag = 1;
-    plot_cell_overlay_flag = 1;
-    plot_statistics_flag = 1;
+    plot_well_segmentation_flag = 0;
+    plot_well_tracks_flag = 0;
+    plot_well_by_well_flag = 0;
+    plot_noise_detection_flag = 0;
+    plot_cell_segmentation_flag = 0;
+    plot_cell_tracking_flag = 0;
+    plot_cell_overlay_flag = 0;
     
     make_movies = 1;
     

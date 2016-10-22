@@ -95,6 +95,7 @@ function movie_file = plot_cell_segmentation_and_tracking(tracking_mode, wells, 
                     plot(xvals,yvals,'-k.','LineWidth',3,'MarkerSize',25)
 
                     set(gca,'yscale','log')
+                    set(gca,'xscale','log')
 
                     if ~isempty(threshold_levels{well_idx}{frame_idx,channel_idx})
                         line([threshold_levels{well_idx}{frame_idx,channel_idx}.level threshold_levels{well_idx}{frame_idx,channel_idx}.level],ylim,'LineStyle','--','Color','k','LineWidth',3)
@@ -112,6 +113,10 @@ function movie_file = plot_cell_segmentation_and_tracking(tracking_mode, wells, 
 
                     box on
                     grid on
+                    
+                    if ~isempty(xvals)
+                        xlim([min(xvals),max(xvals)])
+                    end
             end
 
             suptitle(['Cell segmentation and tracking. Well: ' num2str(well_idx) ' frame: ' num2str(frame_idx)])
@@ -222,7 +227,7 @@ function movie_file = plot_cell_segmentation_and_tracking(tracking_mode, wells, 
         set(gca,'XTick',[])
         set(gca,'YTick',[])
 
-        plot_noise_box(is_noise_matrix(well_idx,channel_idx,frame_idx));
+        cw.plot.noise_box(is_noise_matrix(well_idx,channel_idx,frame_idx));
 
         dist = cell_masks_final{well_idx}(:,:,frame_idx,channel_idx);
         dist = dist(:);
