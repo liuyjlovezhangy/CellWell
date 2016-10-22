@@ -2,9 +2,9 @@ function test_cfg
     
     options = [];
 
-    options.DO_PROCESSING = 1;
+    options.DO_PROCESSING = 0;
     options.DO_ANALYSIS = 0;
-    options.DO_PLOTTING = 0;
+    options.DO_PLOTTING = 1;
     
     options.NUKE_IT = 0; %%% DESTROY ALL OLD OUTPUT DATA/MOVIES INCL OLD RUNS
     options.NUKE_WARN = 0; %%% Pops up a box every time when run with NUKE_IT=1 to ask
@@ -98,12 +98,12 @@ function test_cfg
     %%% Options for plotting
     %%%
     
-    plot_options.well_segmentation = 1;
+    plot_options.well_segmentation = 0;
     plot_options.well_tracks = 0;
     plot_options.well_by_well = 0;
     plot_options.noise_detection = 0;
     plot_options.cell_segmentation = 0;
-    plot_options.cell_tracking = 0;
+    plot_options.cell_tracking = 0; % cell tracking also plots cell segmentation.
     plot_options.cell_overlay = 0;
     
     plot_options.make_movies = 1;

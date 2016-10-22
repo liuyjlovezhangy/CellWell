@@ -98,7 +98,6 @@ function main(options)
 
         % do it
     
-    
         processing_options
         cw.process(options);
     end
