@@ -296,6 +296,7 @@ function cell_segmentation_results_struct = segment_cells( well_tracking_results
     cell_segmentation_results_struct.cell_segmentation_opts = cell_segmentation_opts;
     
     multiWaitbar('CloseAll');
+    drawnow
 end
 
 function good_objects = screen_good_objects(objects)

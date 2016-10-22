@@ -22,8 +22,8 @@ function test_cfg
     % Uncomment the line you are interested in (and comment out others)
     
 %     processing_options.start_at = 0;
-%     processing_options.start_at = 'well segmentation';
-    processing_options.start_at = 'well tracking';
+    processing_options.start_at = 'well segmentation';
+%     processing_options.start_at = 'well tracking';
 %     processing_options.start_at = 'noise detection';
 %     processing_options.start_at = 'cell segmentation';
 %     processing_options.start_at = 'cell tracking';
