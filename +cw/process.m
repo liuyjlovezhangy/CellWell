@@ -35,7 +35,7 @@ function process(options)
     
         disp('Performing well segmentation...')
         
-        well_segmentation_results_struct = cw.process.segment_wells( im(:,:,:,propts.bf_channel), propts );
+        well_segmentation_results_struct = cw.process.segment_wells( im(:,:,:,options.bf_channel), propts );
         
         disp('Saving well segmentation results...')
         

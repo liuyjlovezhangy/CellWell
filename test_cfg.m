@@ -4,12 +4,26 @@ function test_cfg
 
     options.DO_PROCESSING = 1;
     options.DO_ANALYSIS = 0;
-    options.DO_PLOTTING = 0;
+    options.DO_PLOTTING = 1;
     
     options.NUKE_IT = 0; %%% DESTROY ALL OLD OUTPUT DATA/MOVIES INCL OLD RUNS
     options.NUKE_WARN = 0; %%% Pops up a box every time when run with NUKE_IT=1 to ask
 
     options.filename = 'movies/Timelapse01.ome.tiff';
+    
+    %%% Info related to movie
+    
+    options.pixel_size = 1/0.75; % microns per pixel
+    options.time_step = 5*60; % Number of seconds per frame
+    
+    % Movie channel setup
+    
+    options.signal_channel = 1;
+    options.cell_channels = [2 3];
+    options.tracking_channels = [2 3];
+    options.bf_channel = 4;
+    
+    options.channel_names = {};
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,24 +35,12 @@ function test_cfg
     %%% What part of the processing would you like to start from?
     % Uncomment the line you are interested in (and comment out others)
     
-%     processing_options.start_at = 0;
-    processing_options.start_at = 'well segmentation';
+    processing_options.start_at = 0;
+%     processing_options.start_at = 'well segmentation';
 %     processing_options.start_at = 'well tracking';
 %     processing_options.start_at = 'noise detection';
 %     processing_options.start_at = 'cell segmentation';
 %     processing_options.start_at = 'cell tracking';
-    
-    %%% Info related to movie
-    
-    processing_options.pixel_size = 1/0.75; % microns per pixel
-    processing_options.time_step = 5*60; % Number of seconds per frame
-    
-    %%% Movie channel setup
-    
-    processing_options.signal_channel = 1;
-    processing_options.cell_channels = [2 3];
-    processing_options.tracking_channels = [2 3];
-    processing_options.bf_channel = 4;
     
     %%% Well segmentation parameters
     
@@ -95,7 +97,7 @@ function test_cfg
     %%% Options for plotting
     %%%
     
-    plot_options.well_segmentation = 0;
+    plot_options.well_segmentation = 1;
     plot_options.well_tracks = 0;
     plot_options.well_by_well = 0;
     plot_options.noise_detection = 0;
