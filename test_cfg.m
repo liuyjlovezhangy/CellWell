@@ -23,7 +23,7 @@ function test_cfg
     options.tracking_channels = [2 3];
     options.bf_channel = 4;
     
-    options.channel_names = {};
+    options.channel_names = {'SYTOX','Brightfield'};
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

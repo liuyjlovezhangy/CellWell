@@ -1,4 +1,6 @@
-function movie_file = plot_well_segmentation( seg_results_struct, im, otsu_idcs, make_movies, movie_dir )
+function movie_file = plot_well_segmentation( seg_results_struct, im, make_movies, movie_dir )
+
+    otsu_idcs = seg_results_struct.otsu_idcs;
 
     movie_file = [movie_dir '/segmentation.avi'];
 

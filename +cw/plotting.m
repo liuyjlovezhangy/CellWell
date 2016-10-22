@@ -7,10 +7,11 @@ function plotting(options)
     im = mat4D_to_gray(im);
     
     well_segmentation_results_struct = importdata([full_filename '__analysis_results/well_segmentation.mat']);
+    well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
     
     if plopts.well_segmentation
         cw.plot.well_segmentation(well_segmentation_results_struct, im(:,:,:,options.bf_channel),...
-            well_segmentation_results_struct.otsu_idcs, plopts.make_movies, [full_filename '__analysis_results/movies']);
+            plopts.make_movies, [full_filename '__analysis_results/movies']);
     end
     return
        
