@@ -73,6 +73,8 @@ function main(options)
                 new_sa = 4;
             case 'cell tracking'
                 new_sa = 5;
+            case 'next'
+                new_sa = inf;
             otherwise
                 new_sa = 0;
         end

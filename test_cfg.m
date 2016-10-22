@@ -40,7 +40,8 @@ function test_cfg
 %     processing_options.start_at = 'well tracking';
 %     processing_options.start_at = 'noise detection';
 %     processing_options.start_at = 'cell segmentation';
-    processing_options.start_at = 'cell tracking';
+%     processing_options.start_at = 'cell tracking';
+    processing_options.start_at = 'next';
     
     %%% Well segmentation parameters
     
