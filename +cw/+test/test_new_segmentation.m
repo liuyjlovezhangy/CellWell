@@ -8,12 +8,10 @@ function test_new_segmentation
 %     
 %     well_width = 61;
 %     well_spacing_width = 14;
-%     well_well_dist_width = well_width + well_spacing_width;
 %     
 %     well_height = 64;
 %     well_spacing_height = 11;
-%     well_well_dist_height = well_height + well_spacing_height;
-
+% 
 %     im = mat2gray(zloadim('C2-CARTonly_75um_BF.tif'));
 %     im = mat2gray(zloadim('Timelapse01_BF.tif'));
     
@@ -25,15 +23,19 @@ function test_new_segmentation
     
     well_width = 97;
     well_spacing_width = 14;
+
+    well_height = 98;
+    well_spacing_height = 13;
+    
+    im = mat2gray(zloadim('CARTonly_125um_BF.tif'));
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     well_well_dist_width = well_width + well_spacing_width;
     well_array_width = well_width * well_counts(2) + well_spacing_width * (well_counts(2)-1);
     
-    well_height = 98;
-    well_spacing_height = 13;
     well_well_dist_height = well_height + well_spacing_height;
     well_array_height = well_height * well_counts(1) + well_spacing_height * (well_counts(1)-1);
-    
-    im = mat2gray(zloadim('CARTonly_125um_BF.tif'));
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% init
@@ -42,6 +44,8 @@ function test_new_segmentation
     
     extrema_extrema_x = repmat([inf,1],[num_frames,1]);
     extrema_extrema_y = repmat([inf,1],[num_frames,1]);
+    
+    multiWaitbar('CloseAll');
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% drift correct
@@ -63,25 +67,53 @@ function test_new_segmentation
 %         multiWaitbar('Registering...',frame_idx/num_frames);
 %     end
 %     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% rotato
     
+    % find best angle based on the segmentation mask instead of original,
+    % potentially super noisy image
+    
+    angles = [];
+    
+    multiWaitbar('Detecting rotation angle...',0);
+    
+    for frame_idx = 1:num_frames
+        cur_angle = horizon(im(:,:,frame_idx),0.1,'hough');
+        angles = [angles, cur_angle];
+        
+        multiWaitbar('Detecting rotation angle...',frame_idx/num_frames);
+    end
+    
+    angle = mean(angles);
+    
+    multiWaitbar('CloseAll');
+    multiWaitbar('Rotating...',0);
+    
+    im_rotate = zeros([size(imrotate(im(:,:,1),-angle)), num_frames]);
+    
+    for frame_idx = 1:num_frames
+        im_rotate(:,:,frame_idx) = imrotate(im(:,:,frame_idx),-angle);
+        
+        multiWaitbar('Rotating...',frame_idx/num_frames);
+    end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% run segmentation
     
-    im_bknd = zeros([size(im(:,:,1)),num_frames]);
-    im_noise = zeros([size(im(:,:,1)),num_frames]);
-    im_contrast = zeros([size(im(:,:,1)),num_frames]);
-    im_edge = zeros([size(im(:,:,1)),num_frames]);
-    im_close = zeros([size(im(:,:,1)),num_frames]);
-    im_fill = zeros([size(im(:,:,1)),num_frames]);
-    im_open = zeros([size(im(:,:,1)),num_frames]);
+    im_bknd = zeros([size(im_rotate(:,:,1)),num_frames]);
+    im_noise = im_bknd;
+    im_contrast = im_bknd;
+    im_edge = im_bknd;
+    im_close = im_bknd;
+    im_fill = im_bknd;
+    im_open = im_bknd;
     
     multiWaitbar('CloseAll');
     multiWaitbar('Segmenting...',0);
     
     for frame_idx = 1:num_frames
         
-        cur_frame = im(:,:,frame_idx);
+        cur_frame = im_rotate(:,:,frame_idx);
         
         %%% subtract background
         im_bknd(:,:,frame_idx) = cur_frame - imopen(cur_frame,strel('disk',60));
@@ -116,49 +148,6 @@ function test_new_segmentation
     
     im_mask = im_open;
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%% rotato
-    
-    % find best angle based on the segmentation mask instead of original,
-    % potentially super noisy image
-    
-    angles = [];
-    
-    for frame_idx = 1:num_frames
-        cur_angle = horizon(im(:,:,frame_idx),0.1,'hough')
-        angles = [angles, cur_angle];
-    end
-    
-    angle = mean(angles)
-     
-    im_rotate = zeros([size(imrotate(im(:,:,1),-angle)), num_frames]);
-    im_bknd_rotate = im_rotate;
-    im_noise_rotate = im_rotate;
-    im_contrast_rotate = im_rotate;
-    im_edge_rotate = im_rotate;
-    im_close_rotate = im_rotate;
-    im_fill_rotate = im_rotate;
-    im_open_rotate = im_rotate;
-    im_seg_rotate = im_rotate;
-    
-    multiWaitbar('CloseAll');
-    multiWaitbar('Rotating...',0);
-    
-    for frame_idx = 1:num_frames
-        im_rotate(:,:,frame_idx) = imrotate(im(:,:,frame_idx),-angle);
-        im_bknd_rotate(:,:,frame_idx) = imrotate(im_bknd(:,:,frame_idx),-angle);
-        im_noise_rotate(:,:,frame_idx) = imrotate(im_noise(:,:,frame_idx),-angle);
-        im_contrast_rotate(:,:,frame_idx) = imrotate(im_contrast(:,:,frame_idx),-angle);
-        im_edge_rotate(:,:,frame_idx) = imrotate(im_edge(:,:,frame_idx),-angle);
-        im_close_rotate(:,:,frame_idx) = imrotate(im_close(:,:,frame_idx),-angle);
-        im_fill_rotate(:,:,frame_idx) = imrotate(im_fill(:,:,frame_idx),-angle);
-        im_open_rotate(:,:,frame_idx) = imrotate(im_open(:,:,frame_idx),-angle);
-        
-        multiWaitbar('Rotating...',frame_idx/num_frames);
-    end
-    
-    im_mask_rotate = im_open_rotate;
-    
     multiWaitbar('CloseAll');
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -171,10 +160,10 @@ function test_new_segmentation
     
     %%% object detection to find extrema of well spacing in this frame
     for frame_idx = 1:num_frames
-        im_seg_rotate(:,:,frame_idx) = im_rotate(:,:,frame_idx) .* im_mask_rotate(:,:,frame_idx);
+        im_seg(:,:,frame_idx) = im_rotate(:,:,frame_idx) .* im_mask(:,:,frame_idx);
         
-        L = bwlabeln(im_seg_rotate(:,:,frame_idx));
-        objects{frame_idx} = regionprops(L,im_seg_rotate(:,:,frame_idx),'Extrema','Area','Centroid');
+        L = bwlabeln(im_seg(:,:,frame_idx));
+        objects{frame_idx} = regionprops(L,im_seg(:,:,frame_idx),'Extrema','Area','Centroid');
         
         for obj_idx = 1:numel(objects{frame_idx})
             if objects{frame_idx}(obj_idx).Area > min_well_area && objects{frame_idx}(obj_idx).Area < max_well_area
@@ -203,8 +192,8 @@ function test_new_segmentation
     extrema_extrema_x(extrema_extrema_x(:,1) + well_array_width > size(im_rotate,2),:) = NaN;
     extrema_extrema_y(extrema_extrema_y(:,1) + well_array_height > size(im_rotate,1),:) = NaN;
     
-    extrema_extrema_x(sum(extrema_extrema_x,2) < 0.9*well_array_width,:) = NaN;
-    extrema_extrema_y(sum(extrema_extrema_y,2) < 0.9*well_array_height,:) = NaN;
+    extrema_extrema_x(sum(extrema_extrema_x,2) < 0.95*well_array_width,:) = NaN;
+    extrema_extrema_y(sum(extrema_extrema_y,2) < 0.95*well_array_height,:) = NaN;
     
     % outlier detection
     
@@ -272,7 +261,7 @@ function test_new_segmentation
         subtightplot(2,5,2)
         hold all
         
-            imagesc(im_bknd_rotate(:,:,frame_idx))
+            imagesc(im_bknd(:,:,frame_idx))
 
             colormap gray
             axis tight
@@ -285,7 +274,7 @@ function test_new_segmentation
         subtightplot(2,5,3)
         hold all
         
-            imagesc(im_noise_rotate(:,:,frame_idx))
+            imagesc(im_noise(:,:,frame_idx))
 
             colormap gray
             axis tight
@@ -298,7 +287,7 @@ function test_new_segmentation
         subtightplot(2,5,4)
         hold all
         
-            imagesc(im_contrast_rotate(:,:,frame_idx))
+            imagesc(im_contrast(:,:,frame_idx))
 
             colormap gray
             axis tight
@@ -311,7 +300,7 @@ function test_new_segmentation
         subtightplot(2,5,5)
         hold all
         
-            imagesc(im_edge_rotate(:,:,frame_idx))
+            imagesc(im_edge(:,:,frame_idx))
 
             colormap gray
             axis tight
@@ -324,7 +313,7 @@ function test_new_segmentation
         subtightplot(2,5,6)
         hold all
         
-            imagesc(im_close_rotate(:,:,frame_idx))
+            imagesc(im_close(:,:,frame_idx))
 
             colormap gray
             axis tight
@@ -337,7 +326,7 @@ function test_new_segmentation
         subtightplot(2,5,7)
         hold all
         
-            imagesc(im_fill_rotate(:,:,frame_idx))
+            imagesc(im_fill(:,:,frame_idx))
 
             colormap gray
             axis tight
@@ -350,7 +339,7 @@ function test_new_segmentation
         subtightplot(2,5,8)
         hold all
         
-            imagesc(im_open_rotate(:,:,frame_idx))
+            imagesc(im_open(:,:,frame_idx))
 
             colormap gray
             axis tight
@@ -363,7 +352,7 @@ function test_new_segmentation
         subtightplot(2,5,9)
         hold all
         
-            imagesc(im_seg_rotate(:,:,frame_idx))
+            imagesc(im_seg(:,:,frame_idx))
             
             for obj_idx = 1:numel(objects{frame_idx})
 
@@ -409,11 +398,6 @@ function test_new_segmentation
         
             imagesc(im_seg_final(:,:,frame_idx))
             
-            line([extrema_extrema_x(frame_idx,1)-5,extrema_extrema_x(frame_idx,2)+5],[extrema_extrema_y(frame_idx,1)-5,extrema_extrema_y(frame_idx,1)-5],'LineStyle','-','LineWidth',3,'Color','b');
-            line([extrema_extrema_x(frame_idx,1)-5,extrema_extrema_x(frame_idx,2)+5],[extrema_extrema_y(frame_idx,2)+5,extrema_extrema_y(frame_idx,2)+5],'LineStyle','-','LineWidth',3,'Color','b');
-            line([extrema_extrema_x(frame_idx,1)-5,extrema_extrema_x(frame_idx,1)-5],[extrema_extrema_y(frame_idx,1)-5,extrema_extrema_y(frame_idx,2)+5],'LineStyle','-','LineWidth',3,'Color','b');
-            line([extrema_extrema_x(frame_idx,2)+5,extrema_extrema_x(frame_idx,2)+5],[extrema_extrema_y(frame_idx,1)-5,extrema_extrema_y(frame_idx,2)+5],'LineStyle','-','LineWidth',3,'Color','b');
-
             colormap gray
             axis tight
             axis equal
