@@ -74,7 +74,7 @@ function main(options)
             case 'cell tracking'
                 new_sa = 5;
             case 'next'
-                new_sa = inf;
+                new_sa = 1e100; % inf:finite is not working in mats_to_delete indexing below...
             otherwise
                 new_sa = 0;
         end

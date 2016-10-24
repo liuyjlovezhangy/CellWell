@@ -1,6 +1,6 @@
 function [good_well,o] = well_criterion(object)
     o.min_well_area = 2000;
-    o.max_well_area = 3500;
+    o.max_well_area = 5000;
     
     if ~exist('object','var')
         good_well = [];
