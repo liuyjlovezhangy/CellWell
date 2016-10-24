@@ -1,15 +1,15 @@
 function one_cell_cfg
-    
-    options = [];
 
+    options.filename = 'movies/CARTonly_75um_before_leak.tif';
+    
+    %%% RUNNING MODE
+    
     options.DO_PROCESSING = 0;
     options.DO_ANALYSIS = 0;
     options.DO_PLOTTING = 1;
     
     options.NUKE_IT = 0; %%% DESTROY ALL OLD OUTPUT DATA/MOVIES INCL OLD RUNS
     options.NUKE_WARN = 0; %%% Pops up a box every time when run with NUKE_IT=1 to ask
-
-    options.filename = 'movies/CARTonly_75um_before_leak.tif';
     
     %%% Info related to movie
     
@@ -24,6 +24,16 @@ function one_cell_cfg
     options.bf_channel = 2;
     
     options.channel_names = {'(CAR)T cell','Brightfield'};
+    
+    % Plate / well setup
+    
+    % 
+    
+    options.well_counts = [4,4];
+    options.well_width = 97;
+    options.well_spacing_width = 14;
+    options.well_height = 98;
+    options.well_spacing_height = 13;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,12 +55,21 @@ function one_cell_cfg
     
     %%% Well segmentation parameters
     
-    processing_options.correct_rotation = 0; %%% WARNING: NOT RIGOROUSLY TESTED
-    processing_options.wseg_close_size = 10;
-    processing_options.wseg_min_size = 2000;
-    processing_options.wseg_num_otsu_levels = 2;
-    processing_options.wseg_extra_border_x = 3;
-    processing_options.wseg_extra_border_y = 5;
+    % THESE OPTIONS ARE FOR THE ORIGINAL (FAST BUT NOT ROBUST) SEGMENTATION
+    
+    processing_options.wseg_mode = 'otsu';
+    
+    processing_options.wseg_otsu_close_size = 10;
+    processing_options.wseg_otsu_min_size = 2000;
+    processing_options.wseg_otsu_num_otsu_levels = 2;
+    processing_options.wseg_otsu_extra_border_x = 3;
+    processing_options.wseg_otsu_extra_border_y = 5;
+    
+    % THE OPTIONS ARE FOR NEW (SLOW BUT ROBUST) SEGMENTATION
+    
+    processing_options.wseg_mode = 'edge';
+    
+    processing_options.wseg_edge_
     
     %%% Noise detection parameters
     
