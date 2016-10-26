@@ -1,4 +1,4 @@
-function well_segmentation_results_struct = segment_wells( im_bf, o )
+function well_segmentation_results_struct = segment_wells_otsu( im_bf, o )
 
     num_frames = size(im_bf,3);
     

@@ -1,15 +1,17 @@
 function one_cell_cfg
 
-    options.filename = 'movies/CARTonly_75um_before_leak.tif';
+    options.filename = 'movies/CARTonly_125um.ome.tiff';
     
     %%% RUNNING MODE
     
-    options.DO_PROCESSING = 0;
+    options.DO_PROCESSING = 1;
     options.DO_ANALYSIS = 0;
-    options.DO_PLOTTING = 1;
+    options.DO_PLOTTING = 0;
     
     options.NUKE_IT = 0; %%% DESTROY ALL OLD OUTPUT DATA/MOVIES INCL OLD RUNS
     options.NUKE_WARN = 0; %%% Pops up a box every time when run with NUKE_IT=1 to ask
+    
+    options.ask_me = 1; %%% Ask user if the results look good after registration, segmentation, etc.
     
     %%% Info related to movie
     
@@ -27,8 +29,6 @@ function one_cell_cfg
     
     % Plate / well setup
     
-    % 
-    
     options.well_counts = [4,4];
     options.well_width = 97;
     options.well_spacing_width = 14;
@@ -45,31 +45,34 @@ function one_cell_cfg
     %%% What part of the processing would you like to start from?
     % Uncomment the line you are interested in (and comment out others)
     
-    processing_options.start_at = 0;
-%     processing_options.start_at = 'well segmentation';
+%     processing_options.start_at = 0;
+    processing_options.start_at = 'well segmentation';
 %     processing_options.start_at = 'well tracking';
 %     processing_options.start_at = 'noise detection';
 %     processing_options.start_at = 'cell segmentation';
 %     processing_options.start_at = 'cell tracking';
 %     processing_options.start_at = 'next';
     
+    %%% Movie modifications
+    
+    processing_options.register = 1;
+    processing_options.rotate = 1;
+
     %%% Well segmentation parameters
     
     % THESE OPTIONS ARE FOR THE ORIGINAL (FAST BUT NOT ROBUST) SEGMENTATION
     
-    processing_options.wseg_mode = 'otsu';
+    % ~~~@~!@~!@~!@!~ this is currently broken after I made the other ver.
     
-    processing_options.wseg_otsu_close_size = 10;
-    processing_options.wseg_otsu_min_size = 2000;
-    processing_options.wseg_otsu_num_otsu_levels = 2;
-    processing_options.wseg_otsu_extra_border_x = 3;
-    processing_options.wseg_otsu_extra_border_y = 5;
+%     processing_options.wseg_mode = 'otsu';
+%     
+%     processing_options.wseg_otsu_close_size = 10;
+%     processing_options.wseg_otsu_min_size = 2000;
+%     processing_options.wseg_otsu_num_otsu_levels = 62;
     
-    % THE OPTIONS ARE FOR NEW (SLOW BUT ROBUST) SEGMENTATION
+    % THESE OPTIONS ARE FOR NEW (SLOW BUT ROBUST [ideally...]) SEGMENTATION
     
     processing_options.wseg_mode = 'edge';
-    
-    processing_options.wseg_edge_
     
     %%% Noise detection parameters
     

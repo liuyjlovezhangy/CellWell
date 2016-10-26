@@ -16,6 +16,44 @@ function process(options)
         
         im = zloadim(full_filename,1);
         
+        % Perform registration and rotation if desired
+        
+        if options.processing_options.register
+            im_reg = cw.process.register(im,options.bf_channel);
+            
+            if options.ask_me
+
+                im_combination = [im(:,:,:,options.bf_channel), im_reg(:,:,:,options.bf_channel)];
+
+                answer = cw.plot.confirm_results(im_combination(:,:,:,options.bf_channel),'Registration results.');
+
+                if ~strcmp(answer,'Yes')
+                    return
+                end
+            end
+            
+            im = im_reg;
+        end
+        
+        if options.processing_options.rotate
+            im_rotate = cw.process.rotate(im,options.bf_channel);
+            
+            if options.ask_me
+                im_combination = [padarray(im(:,:,:,options.bf_channel),[size(im_rotate,1) - size(im,1), size(im_rotate,2) - size(im,2)],'post'), im_rotate(:,:,:,options.bf_channel)];
+
+                answer = cw.plot.confirm_results(im_combination(:,:,:,options.bf_channel),'Rotation results.');
+
+                if ~strcmp(answer,'Yes')
+                    return
+                end
+            end
+            
+            im = im_rotate;
+        end
+        
+        % Save movie to .mat for quicker access times
+        
+        disp('Saving input movie to .mat...')
         save([full_filename '__analysis_results/input_movie.mat'],'im')
         
     else
@@ -35,7 +73,23 @@ function process(options)
     
         disp('Performing well segmentation...')
         
-        well_segmentation_results_struct = cw.process.segment_wells( im(:,:,:,options.bf_channel), propts );
+        if strcmp(options.processing_options.wseg_mode,'otsu')
+            well_segmentation_results_struct = cw.process.segment_wells_otsu( im(:,:,:,options.bf_channel), options );
+        elseif strcmp(options.processing_options.wseg_mode,'edge')
+            well_segmentation_results_struct = cw.process.segment_wells_edge( im(:,:,:,options.bf_channel), options );
+        else
+            error('Unrecognized well segmentation mode.')
+        end
+                
+        if options.ask_me
+            im_combination = [im(:,:,:,options.bf_channel), well_segmentation_results_struct.im_seg_final];
+
+            answer = cw.plot.confirm_results(im_combination(:,:,:),'Well segmentation results.');
+
+            if ~strcmp(answer,'Yes')
+                return
+            end
+        end        
         
         disp('Saving well segmentation results...')
         
