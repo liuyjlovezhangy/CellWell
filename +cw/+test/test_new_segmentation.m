@@ -1,5 +1,7 @@
 function test_new_segmentation
 
+    warning('This test is now a chimera that should not be seriously considered or used for anything')
+
     %%% THIS IS FOR 75 um WELLS
 
 %     well_counts = [6,6]; % #rows x #cols
@@ -28,6 +30,67 @@ function test_new_segmentation
     well_spacing_height = 13;
     
     im = mat2gray(zloadim('CARTonly_125um_BF.tif'));
+
+%     im = mat2gray(zloadim('CARTonly_125um_BF.tif'));
+% %     im = mat2gray(zloadim('Timelapse01_BF.tif'));
+% 
+%     X = 10;
+%     mu = 0;
+%     sigma = 1000;
+%     sigma_width = 35;
+% 
+%     im_slice = im(:,:,1);
+%     
+%     
+% %     im_slice = im_slice - imopen(im_slice,strel('disk',100));
+%     im_slice = wiener2(im_slice);
+%     [data_out, kernel] = plus_filt2D(im_slice,1.2,0,1000,35);%plus_filt2D(im_slice,X,mu,sigma,sigma_width);
+% 
+%     data_out = mat2gray(data_out);
+%     
+%     [im_seg,~,thresh] = otsu(data_out);
+%     
+%     im_seg = imcomplement(im_seg);
+%     
+%     thresh=thresh(end);
+%     
+% %     thresh = 0.1
+%     
+% %     im_seg = data_out < thresh;
+%     
+%     figure(13048)
+%     clf
+%         
+%         subtightplot(1,3,1)
+%             hold all
+%             
+%             imagesc(im_slice)
+%         
+%             colormap gray
+%             axis tight
+%             axis equal
+%             axis off
+%             set(gca,'Ydir','Reverse')
+%             
+%         subtightplot(1,3,2)
+%             hold all
+%             
+%             imagesc(im_seg)
+%         
+%             colormap gray
+%             axis tight
+%             axis equal
+%             axis off
+%             set(gca,'Ydir','Reverse')
+%             
+%         subtightplot(1,3,3)
+%             hold all
+%             
+%             hist(data_out(:),100)
+%             
+%             line([thresh thresh], ylim, 'LineStyle','--','Color','r','LineWidth',3)
+% 
+% return
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -73,6 +136,8 @@ function test_new_segmentation
     % find best angle based on the segmentation mask instead of original,
     % potentially super noisy image
     
+%     im_rotate = im;
+    
     angles = [];
     
     multiWaitbar('Detecting rotation angle...',0);
@@ -117,21 +182,37 @@ function test_new_segmentation
         
         %%% subtract background
         im_bknd(:,:,frame_idx) = cur_frame - imopen(cur_frame,strel('disk',60));
+        im_bknd(:,:,frame_idx) = cur_frame;
         
         %%% remove noise
         im_noise(:,:,frame_idx) = wiener2(im_bknd(:,:,frame_idx), [5,5]);
         
         %%% contrast adjust
-        im_contrast(:,:,frame_idx) = imadjust(im_noise(:,:,frame_idx),[0.1 0.4],[],0.20);
+        im_contrast(:,:,frame_idx) = im_noise(:,:,frame_idx);
+%         im_contrast(:,:,frame_idx) = imadjust(im_noise(:,:,frame_idx),[0.1 0.4],[],0.20);
         
         %%% edge detection / segmentation
-        im_edge(:,:,frame_idx) = edge(im_contrast(:,:,frame_idx),'canny');
+%         im_edge(:,:,frame_idx) = edge(im_contrast(:,:,frame_idx),'canny');
 
+%         plus_filt2D(im_slice,1.2,0,1000,35);
+
+        [data_out, kernel] = plus_filt2D(im_noise(:,:,frame_idx),1.2,0,1000,35);
+        
+        data_out = mat2gray(data_out);
+
+        [im_edge(:,:,frame_idx),~,thresh] = otsu(data_out);
+
+        im_edge(:,:,frame_idx) = imcomplement(im_edge(:,:,frame_idx));
+        
+%         im_edge(:,:,frame_idx) = data_out < thresh;
+        
         %%% line dilating / closing      
+%         setiny = strel('disk',1);
         sedilate_x = strel('line',3,90);
         sedilate_y = strel('line',3,0);
         seclose = strel('rectangle',[3 3]);
         
+%         im_close(:,:,frame_idx) = imopen(im_edge(:,:,frame_idx),setiny);
         im_close(:,:,frame_idx) = imdilate(im_edge(:,:,frame_idx),sedilate_x);
         im_close(:,:,frame_idx) = imdilate(im_close(:,:,frame_idx),sedilate_y);
         im_close(:,:,frame_idx) = imclearborder(imclose(im_close(:,:,frame_idx),seclose));
@@ -199,8 +280,8 @@ function test_new_segmentation
     
     alpha = 0.25;
     
-    extrema_extrema_x = [deleteoutliers(extrema_extrema_x(:,1),alpha,1), deleteoutliers(extrema_extrema_x(:,2),alpha,1)];
-    extrema_extrema_y = [deleteoutliers(extrema_extrema_y(:,1),alpha,1), deleteoutliers(extrema_extrema_y(:,2),alpha,1)];
+%     extrema_extrema_x = [deleteoutliers(extrema_extrema_x(:,1),alpha,1), deleteoutliers(extrema_extrema_x(:,2),alpha,1)];
+%     extrema_extrema_y = [deleteoutliers(extrema_extrema_y(:,1),alpha,1), deleteoutliers(extrema_extrema_y(:,2),alpha,1)];
     
     % sweep extrema list and set NaNs to nearest neighbor extrema
     
@@ -229,7 +310,7 @@ function test_new_segmentation
                 start_j = round(extrema_extrema_x(frame_idx,1)) + (col_idx-1) * well_well_dist_width;
                 end_j = start_j + well_width;
 
-                mask_final(start_i:end_i, start_j:end_j, frame_idx) = 1;
+%                 mask_final(start_i:end_i, start_j:end_j, frame_idx) = 1;
             end 
         end
         
