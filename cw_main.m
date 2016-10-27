@@ -1,4 +1,16 @@
-function main(options)
+function cw_main(options_file)
+    
+    if ~exist('options_file','var')
+        [filename, path] = uigetfile('*.m', 'Select CellWell configuration script...');
+        
+        options_file = [path filename];
+        
+        if filename == 0
+            return
+        end
+    end
+
+    options = evalf(options_file);
     
     processing_options = options.processing_options;
     analysis_options = options.analysis_options;

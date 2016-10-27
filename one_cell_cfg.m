@@ -1,4 +1,4 @@
-function one_cell_cfg
+function options = one_cell_cfg
 
     options.filename = 'movies/CARTonly_125um.ome.tiff';
     
@@ -135,6 +135,5 @@ function one_cell_cfg
     options.processing_options = processing_options;
     options.analysis_options = analysis_options;
     options.plot_options = plot_options;
-    
-    cw.main(options);
+
 end
