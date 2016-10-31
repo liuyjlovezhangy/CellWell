@@ -1,17 +1,19 @@
-function options = one_cell_cfg
+function one_cell_cfg
 
     options.filename = 'movies/CARTonly_125um_SMALL.tif';
     
     %%% RUNNING MODE
     
-    options.DO_PROCESSING = 1;
+    options.DO_PROCESSING = 0;
     options.DO_ANALYSIS = 0;
-    options.DO_PLOTTING = 0;
+    options.DO_PLOTTING = 1;
     
     options.NUKE_IT = 0; %%% DESTROY ALL OLD OUTPUT DATA/MOVIES INCL OLD RUNS
     options.NUKE_WARN = 0; %%% Pops up a box every time when run with NUKE_IT=1 to ask
     
     options.ask_me = 1; %%% Ask user if the results look good after registration, segmentation, etc.
+    
+    options.last_frame = 5; %%% Only process through <n> frames
     
     %%% Info related to movie
     
@@ -20,12 +22,12 @@ function options = one_cell_cfg
     
     % Movie channel setup
     
-    options.signal_channel = [];
+    options.signal_channels = [];
     options.cell_channels = 1;
     options.tracking_channels = 1;
     options.bf_channel = 2;
     
-    options.channel_names = {'(CAR)T cell','Brightfield'};
+    options.channel_labels = {'(CAR)T cell','Brightfield'};
     
     % Plate / well setup
     
@@ -39,9 +41,9 @@ function options = one_cell_cfg
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%
-    %%% Options for segmenting wells, tracking cells, etc.
+    %%% BASIC processing options for segmenting wells, tracking cells, etc.
     %%%
-
+    
     %%% What part of the processing would you like to start from?
     % Uncomment the line you are interested in (and comment out others)
     
@@ -55,54 +57,20 @@ function options = one_cell_cfg
     
     %%% Movie modifications
     
-    processing_options.register = 1;
+    processing_options.register = 0;
     processing_options.rotate = 1;
 
-    %%% Well segmentation parameters
-    
-    % THESE OPTIONS ARE FOR THE ORIGINAL (FAST BUT NOT ROBUST) SEGMENTATION
-    
-    % ~~~@~!@~!@~!@!~ this is currently broken after I made the other ver.
-    
-%     processing_options.wseg_mode = 'otsu';
-%     
-%     processing_options.wseg_otsu_close_size = 10;
-%     processing_options.wseg_otsu_min_size = 2000;
-%     processing_options.wseg_otsu_num_otsu_levels = 62;
-    
-    % THESE OPTIONS ARE FOR NEW (SLOW BUT ROBUST [ideally...]) SEGMENTATION
-    
+    %%% Well segmentation mode
+
+%     processing_options.wseg_mode = 'otsu'; %%% !%!@#!@ BROKEN
     processing_options.wseg_mode = 'edge';
     
-    %%% Noise detection parameters
+    %%% Cell segmentation mode
     
-    processing_options.ndec_thresh_mean = 1;
-    processing_options.ndec_thresh_stdev = 0.5;
-    processing_options.ndec_do_wiener = 1;
-    processing_options.ndec_do_blur = 1;
-    processing_options.ndec_blur_sigma = 10;
-    processing_options.ndec_blur_hsize = [10 10];
-    processing_options.ndec_entropy_nsize = ones(9);
+    processing_options.debug_seg = 0;
     
-    %%% Cell segmentation parameters
-    
-    processing_options.cseg_adaptive_thresh_scale = 1.5;
-    processing_options.cseg_tracking_params.threshold_density = 0.1;
-    processing_options.cseg_tracking_params.peak_stringency = 'low';
-    processing_options.cseg_tracking_params.threshold_smoothing = 'off';
-
-    processing_options.cseg_min_cell_area = 10;
-    
-    processing_options.cseg_watershedding = [1 1 1];
-    processing_options.cseg_close_radius = [1 1 4];
-    
-    %%% Cell tracking parameters
-    
-    processing_options.ctrk_mode = 'conservative';
-    processing_options.ctrk_searchrad = 10;
-    processing_options.ctrk_gap_close = 0;
-    
-    processing_options.ctrk_min_track_len = 3;
+%     processing_options.cseg_mode = 'simple'; %%% !%!@#!@ BROKEN
+    processing_options.cseg_mode = 'circle';
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,17 +88,89 @@ function options = one_cell_cfg
     %%% Options for plotting
     %%%
     
-    plot_options.well_segmentation = 1;
+    plot_options.well_segmentation = 0;
     plot_options.well_tracks = 0;
     plot_options.well_by_well = 0;
     plot_options.noise_detection = 0;
-    plot_options.cell_segmentation = 0;
+    plot_options.cell_segmentation = 1;
     plot_options.cell_tracking = 0; % cell tracking also plots cell segmentation.
     plot_options.cell_overlay = 0;
     
     plot_options.make_movies = 1;
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%
+    %%% ADVANCED Options for segmenting wells, tracking cells, etc.
+    %%%
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Well segmentation parameters
+    
+    %%% OTSU WELL THRESHOLDING
+    % THESE OPTIONS ARE FOR THE ORIGINAL (FAST BUT NOT ROBUST) SEGMENTATION
+    % ~~~@~!@~!@~!@!~ this is currently broken after I made the other ver.
 
+    processing_options.wseg_otsu_close_size = 10;
+    processing_options.wseg_otsu_min_size = 2000;
+    processing_options.wseg_otsu_num_otsu_levels = 62;
+    
+    %%% EDGE-DETECTION WELL THRESHOLDING
+    % THESE OPTIONS ARE FOR NEW (SLOW BUT ROBUST [ideally...]) SEGMENTATION
+    
+    warning('well segmentation based on edge does not have user specifiable parameters yet')
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Noise detection parameters
+    
+    processing_options.ndec_thresh_mean = 1;
+    processing_options.ndec_thresh_stdev = 0.5;
+    processing_options.ndec_do_wiener = 1;
+    processing_options.ndec_do_blur = 1;
+    processing_options.ndec_blur_sigma = 10;
+    processing_options.ndec_blur_hsize = [10 10];
+    processing_options.ndec_entropy_nsize = ones(9);
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Cell segmentation parameters
+    
+    %%% GENERAL THRESHOLDING OPTIONS
+    
+    processing_options.cseg_adaptive_thresh_scale = 1.5;
+    processing_options.cseg_tracking_params.threshold_density = 0.1;
+    processing_options.cseg_tracking_params.peak_stringency = 'low';
+    processing_options.cseg_tracking_params.threshold_smoothing = 'off';
+    
+    processing_options.cseg_min_cell_area = 10;   
+    
+    %%% SIMPLE THRESHOLDING
+    
+    processing_options.cseg_simple_watershedding = 1;
+    processing_options.cseg_simple_water_method = 'dist'; 
+%     processing_options.cseg_simple_water_method = 'intensity'; 
+    
+    processing_options.cseg_simple_close_radius = 1;
+    processing_options.cseg_simple_open_radius = 2;
+    
+    %%% HOUGH CIRCLE THRESHOLDING
+    
+    warning('No options for Hough circle detection implemented yet.')
+    
+    %%% Cell tracking parameters
+    
+    processing_options.ctrk_mode = 'conservative';
+    processing_options.ctrk_searchrad = 10;
+    processing_options.ctrk_gap_close = 0;
+    
+    processing_options.ctrk_min_track_len = 3;
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%
     %%% Compile options and run
+    %%%
     
     options.processing_options = processing_options;
     options.analysis_options = analysis_options;
