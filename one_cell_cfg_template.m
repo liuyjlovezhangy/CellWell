@@ -1,6 +1,6 @@
 function options = one_cell_cfg
 
-    options.filename = 'movies/CARTonly_125um.ome.tiff';
+    options.filename = 'movies/CARTonly_125um_SMALL.tif';
     
     %%% RUNNING MODE
     
@@ -46,12 +46,12 @@ function options = one_cell_cfg
     % Uncomment the line you are interested in (and comment out others)
     
 %     processing_options.start_at = 0;
-    processing_options.start_at = 'well segmentation';
+%     processing_options.start_at = 'well segmentation';
 %     processing_options.start_at = 'well tracking';
 %     processing_options.start_at = 'noise detection';
 %     processing_options.start_at = 'cell segmentation';
 %     processing_options.start_at = 'cell tracking';
-%     processing_options.start_at = 'next';
+    processing_options.start_at = 'next';
     
     %%% Movie modifications
     
@@ -135,5 +135,7 @@ function options = one_cell_cfg
     options.processing_options = processing_options;
     options.analysis_options = analysis_options;
     options.plot_options = plot_options;
+    
+    save('one_cell_cfg.mat','options')
 
 end

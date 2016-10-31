@@ -1,5 +1,5 @@
-function well_tracking_results_struct = track_wells( im, well_segmentation_results_struct, o )
-        
+function well_tracking_results_struct = track_wells( im, well_segmentation_results_struct, options )
+
     num_frames = size(im,3);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,22 +77,13 @@ function well_tracking_results_struct = track_wells( im, well_segmentation_resul
 
     total_wells = max(well_ids(:));
 
-    wells.track = [];
-
-    % measure the average x,y length of the wells in the first frame
-
-    well_half_widths = [];
-    well_half_heights = [];
-
-    for obj_idx = 1:numel(well_segmentation_results_struct.frame(1).good_objects)
-        props = well_segmentation_results_struct.frame(1).good_objects(obj_idx);
-
-        well_half_widths = [well_half_widths, ceil((max(props.Extrema(:,1)) - min(props.Extrema(:,1))) ./ 2)];
-        well_half_heights = [well_half_heights, ceil((max(props.Extrema(:,2)) - min(props.Extrema(:,2))) ./ 2)];
+    if total_wells ~= prod(options.well_counts)
+        total_wells
+        prod_options.well_counts
+        error('Well tracking: did not find enough wells during tracking')
     end
-
-    well_half_widths = mean(well_half_widths);
-    well_half_heights = mean(well_half_heights);
+    
+    wells.track = [];
 
     new_mask = zeros(size(im,1),size(im,2));
 
@@ -102,20 +93,21 @@ function well_tracking_results_struct = track_wells( im, well_segmentation_resul
         wells(well_idx).track = well_tracks{well_idx};
         wells(well_idx).track_shifted = well_tracks_shifted{well_idx};
 
-        wells(well_idx).left_boundary = mean(well_tracks_shifted{well_idx}(1,:)) - well_half_widths - o.wseg_extra_border_x;
-        wells(well_idx).right_boundary = mean(well_tracks_shifted{well_idx}(1,:)) + well_half_widths + o.wseg_extra_border_x;
-        wells(well_idx).bottom_boundary = mean(well_tracks_shifted{well_idx}(2,:)) - well_half_heights - o.wseg_extra_border_y;
-        wells(well_idx).top_boundary = mean(well_tracks_shifted{well_idx}(2,:)) + well_half_heights + o.wseg_extra_border_y;
+        wells(well_idx).left_boundary = floor(mean(well_tracks_shifted{well_idx}(1,:)) - options.well_width/2);
+        wells(well_idx).right_boundary = wells(well_idx).left_boundary + options.well_width - 1;
+        wells(well_idx).bottom_boundary = floor(mean(well_tracks_shifted{well_idx}(2,:)) - options.well_height/2);
+        wells(well_idx).top_boundary = wells(well_idx).bottom_boundary + options.well_height - 1;
 
-        % make new mask now based on well tracking
+        % make well image stacks based on well tracking
 
-        i_idcs = floor(wells(well_idx).bottom_boundary:ceil(wells(well_idx).top_boundary));
-        j_idcs = floor(wells(well_idx).left_boundary):ceil(wells(well_idx).right_boundary);
+        i_idcs = wells(well_idx).bottom_boundary:wells(well_idx).top_boundary;
+        j_idcs = wells(well_idx).left_boundary:wells(well_idx).right_boundary;
 
         new_mask(i_idcs,j_idcs) = 1;
 
         wells(well_idx).im_well = im_shifted(i_idcs,j_idcs,:,:);
-
+        
+        
     end
 
     well_tracking_results_struct.wells = wells;

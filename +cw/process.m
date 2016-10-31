@@ -16,16 +16,20 @@ function process(options)
         
         im = zloadim(full_filename,1);
         
+        if options.last_frame ~= -1
+            im = im(:,:,1:options.last_frame,:);
+        end
+        
         % Perform registration and rotation if desired
         
-        if options.processing_options.register
+        if propts.register
             im_reg = cw.process.register(im,options.bf_channel);
             
             if options.ask_me
 
                 im_combination = [im(:,:,:,options.bf_channel), im_reg(:,:,:,options.bf_channel)];
 
-                answer = cw.plot.confirm_results(im_combination(:,:,:,options.bf_channel),'Registration results.');
+                answer = cw.plot.confirm_results(im_combination,'Registration results.');
 
                 if ~strcmp(answer,'Yes')
                     return
@@ -35,13 +39,13 @@ function process(options)
             im = im_reg;
         end
         
-        if options.processing_options.rotate
+        if propts.rotate
             im_rotate = cw.process.rotate(im,options.bf_channel);
             
             if options.ask_me
                 im_combination = [padarray(im(:,:,:,options.bf_channel),[size(im_rotate,1) - size(im,1), size(im_rotate,2) - size(im,2)],'post'), im_rotate(:,:,:,options.bf_channel)];
 
-                answer = cw.plot.confirm_results(im_combination(:,:,:,options.bf_channel),'Rotation results.');
+                answer = cw.plot.confirm_results(im_combination,'Rotation results.');
 
                 if ~strcmp(answer,'Yes')
                     return
@@ -64,8 +68,6 @@ function process(options)
     
     im = mat4D_to_gray(im);
     
-%     link_params.total_num_frames = size(im,3);
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Perform segmentation on each BF frame
     
@@ -73,16 +75,16 @@ function process(options)
     
         disp('Performing well segmentation...')
         
-        if strcmp(options.processing_options.wseg_mode,'otsu')
-            well_segmentation_results_struct = cw.process.segment_wells_otsu( im(:,:,:,options.bf_channel), options );
-        elseif strcmp(options.processing_options.wseg_mode,'edge')
-            well_segmentation_results_struct = cw.process.segment_wells_edge( im(:,:,:,options.bf_channel), options );
+        if strcmp(propts.wseg_mode,'otsu')
+            [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_otsu( im, options );
+        elseif strcmp(propts.wseg_mode,'edge')
+            [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_edge( im, options );
         else
             error('Unrecognized well segmentation mode.')
         end
                 
         if options.ask_me
-            im_combination = [im(:,:,:,options.bf_channel), well_segmentation_results_struct.im_seg_final];
+            im_combination = [im(:,:,:,options.bf_channel), im_seg_final(:,:,:,options.bf_channel)];
 
             answer = cw.plot.confirm_results(im_combination(:,:,:),'Well segmentation results.');
 
@@ -107,7 +109,7 @@ function process(options)
     
         disp('Performing well tracking...')
         
-        well_tracking_results_struct = cw.process.track_wells( im, well_segmentation_results_struct, propts );
+        well_tracking_results_struct = cw.process.track_wells( im, well_segmentation_results_struct, options );
     
         disp('Saving well tracking results...')
         
@@ -126,7 +128,16 @@ function process(options)
         
         disp('Detecting wells and frames with signal in each channel...')
 
-        signal_detection_results_struct = cw.process.detect_noise( well_tracking_results_struct, propts );
+        [signal_detection_results_struct,validation_images] = cw.process.detect_noise( well_tracking_results_struct, options );
+        
+        if options.ask_me
+
+            answer = cw.plot.confirm_results(validation_images,'Noise detection results.');
+
+            if ~strcmp(answer,'Yes')
+                return
+            end
+        end
         
         disp('Saving signal detection results....')
         
@@ -144,13 +155,39 @@ function process(options)
         
         disp('Segmenting cells in each well...')
 
-        cell_segmentation_results_struct = cw.process.segment_cells( well_tracking_results_struct, ...
-            signal_detection_results_struct, propts );
+        if strcmp(propts.cseg_mode,'simple')
         
-        disp('Cleaning up segmentation....')
+            [cell_segmentation_results_struct,validation_images] = cw.process.segment_cells_simple( well_tracking_results_struct, ...
+                signal_detection_results_struct, options );
+
+            if options.ask_me
+
+                answer = cw.plot.confirm_results(validation_images,'Cell segmentation results.');
+
+                if ~strcmp(answer,'Yes')
+                    return
+                end
+            end
+
+            disp('Cleaning up segmentation....')
+
+            [cell_segmentation_results_struct,validation_images] = cw.process.clean_up_cell_segmentation_simple( cell_segmentation_results_struct, [] );
+
+            if options.ask_me
+
+                answer = cw.plot.confirm_results(validation_images,'Cell segmentation CLEANING results.');
+
+                if ~strcmp(answer,'Yes')
+                    return
+                end
+            end
+        elseif strcmp(propts.cseg_mode,'circle')
+            [cell_segmentation_results_struct,~] = cw.process.segment_cells_circle( well_tracking_results_struct, ...
+                signal_detection_results_struct, options );
+        else
+            error('Unknown cell segmentation mode.')
+        end
         
-        cell_segmentation_results_struct = cw.process.clean_up_cell_segmentation( cell_segmentation_results_struct, [] );
-       
         disp('Saving cell segmentation results....')
         
         save([full_filename '__analysis_results/cell_segmentation.mat'],'cell_segmentation_results_struct')

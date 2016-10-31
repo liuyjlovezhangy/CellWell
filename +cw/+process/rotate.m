@@ -22,11 +22,11 @@ function im_rotate = rotate( im, angle_channel )
     multiWaitbar('CloseAll');
     multiWaitbar('Rotating...',0);
     
-    im_rotate = zeros([size(imrotate(im(:,:,1,angle_channel),-angle)), num_frames]);
+    im_rotate = zeros([size(imrotate(im(:,:,1,angle_channel),-angle)), num_frames, num_channels]);
     
     for frame_idx = 1:num_frames
         for channel_idx = 1:num_channels
-            im_rotate(:,:,frame_idx,num_channels) = imrotate(im(:,:,frame_idx,num_channels),-angle);
+            im_rotate(:,:,frame_idx,channel_idx) = imrotate(im(:,:,frame_idx,channel_idx),-angle);
         end
         
         multiWaitbar('Rotating...',frame_idx/num_frames);

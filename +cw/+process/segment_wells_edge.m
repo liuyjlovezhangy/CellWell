@@ -1,4 +1,6 @@
-function well_segmentation_results_struct = segment_wells_edge(im_bf, options)
+function [well_segmentation_results_struct, im_seg_final] = segment_wells_edge(im, options)
+
+    im_bf = im(:,:,:,options.bf_channel);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -14,7 +16,8 @@ function well_segmentation_results_struct = segment_wells_edge(im_bf, options)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% init
     
-    num_frames = size(im_bf,3);
+    num_frames = size(im,3);
+    num_channels = size(im,4);
     
     extrema_extrema_x = repmat([inf,1],[num_frames,1]);
     extrema_extrema_y = repmat([inf,1],[num_frames,1]);
@@ -110,7 +113,7 @@ function well_segmentation_results_struct = segment_wells_edge(im_bf, options)
     multiWaitbar('CloseAll');
     
     mask_final = zeros(size(im_bf));
-    im_seg_final = mask_final;
+    im_seg_final = zeros(size(im));
     
     %%% repair extrema matrices for frames that didn't segment well by
     %%% borrowing extrema from neighboring frames
@@ -164,7 +167,9 @@ function well_segmentation_results_struct = segment_wells_edge(im_bf, options)
             end 
         end
         
-        im_seg_final(:,:,frame_idx) = im_bf(:,:,frame_idx) .* mask_final(:,:,frame_idx);
+        for channel_idx = 1:num_channels
+            im_seg_final(:,:,frame_idx,channel_idx) = im(:,:,frame_idx,channel_idx) .* mask_final(:,:,frame_idx);
+        end
     end
     
     % detect actual wells based on our inferred mask
@@ -181,5 +186,5 @@ function well_segmentation_results_struct = segment_wells_edge(im_bf, options)
         well_segmentation_results_struct.frame(frame_idx).good_objects = objects;
     end
     
-    well_segmentation_results_struct.im_seg_final = im_seg_final;
+%     well_segmentation_results_struct.im_seg_final = im_seg_final;
 end

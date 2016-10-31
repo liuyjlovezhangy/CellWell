@@ -156,7 +156,7 @@ function movie_file = plot_cell_segmentation_and_tracking(tracking_mode, wells, 
         hold all
 
         if image_mode == 1
-            rgb = label2rgb(cur_slice,'jet',[.5 .5 .5]);
+            rgb = label2rgb(cur_slice,'jet',0);
             imagesc(rgb)
         else
             imagesc(cur_slice)

@@ -1,6 +1,6 @@
 function test_new_segmentation
 
-    warning('This test is now a chimera that should not be seriously considered or used for anything')
+    warning('This test is now a chimera that should not be seriously considered or used for anything. Abandon hope all ye who use this file.')
 
     %%% THIS IS FOR 75 um WELLS
 
@@ -192,17 +192,17 @@ function test_new_segmentation
 %         im_contrast(:,:,frame_idx) = imadjust(im_noise(:,:,frame_idx),[0.1 0.4],[],0.20);
         
         %%% edge detection / segmentation
-%         im_edge(:,:,frame_idx) = edge(im_contrast(:,:,frame_idx),'canny');
+        im_edge(:,:,frame_idx) = edge(im_contrast(:,:,frame_idx),'canny');
 
 %         plus_filt2D(im_slice,1.2,0,1000,35);
 
-        [data_out, kernel] = plus_filt2D(im_noise(:,:,frame_idx),1.2,0,1000,35);
+%         [data_out, kernel] = plus_filt2D(im_noise(:,:,frame_idx),1.2,0,1000,35);
         
-        data_out = mat2gray(data_out);
+%         data_out = mat2gray(data_out);
 
-        [im_edge(:,:,frame_idx),~,thresh] = otsu(data_out);
+%         [im_edge(:,:,frame_idx),~,thresh] = otsu(data_out);
 
-        im_edge(:,:,frame_idx) = imcomplement(im_edge(:,:,frame_idx));
+%         im_edge(:,:,frame_idx) = imcomplement(im_edge(:,:,frame_idx));
         
 %         im_edge(:,:,frame_idx) = data_out < thresh;
         

@@ -88,9 +88,17 @@ function plotting(options)
            signal_detection_results_struct = importdata([full_filename '__analysis_results/noise_detection.mat']);
         end
         
-        cw.plot.cell_segmentation_and_tracking(0,well_tracking_results_struct.wells, ...
-            cell_segmentation_results_struct, [], signal_detection_results_struct.is_noise_matrix, make_movies,...
+        if strcmp(options.processing_options.cseg_mode,'simple')
+            cw.plot.cell_segmentation_and_tracking_simple(0,well_tracking_results_struct.wells, ...
+                cell_segmentation_results_struct, [], signal_detection_results_struct.is_noise_matrix, options, make_movies,...
             [full_filename '__analysis_results/movies']);
+        elseif strcmp(options.processing_options.cseg_mode,'circle')
+            cw.plot.cell_segmentation_and_tracking_circle(0,well_tracking_results_struct.wells, ...
+                cell_segmentation_results_struct, [], signal_detection_results_struct.is_noise_matrix, options, make_movies,...
+            [full_filename '__analysis_results/movies']);
+        else
+            error('unrecognized cell segmentation mode')
+        end
     end
 
     % tracking
@@ -112,9 +120,15 @@ function plotting(options)
            signal_detection_results_struct = importdata([full_filename '__analysis_results/noise_detection.mat']);
         end
         
-        cw.plot.cell_segmentation_and_tracking('both',well_tracking_results_struct.wells, ...
-            cell_segmentation_results_struct, cell_tracking_results_struct, signal_detection_results_struct.is_noise_matrix, make_movies,...
-            [full_filename '__analysis_results/movies']);
+        if strcmp(options.processing_options.cseg_mode,'simple')
+            cw.plot.cell_segmentation_and_tracking_simple('both',well_tracking_results_struct.wells, ...
+                cell_segmentation_results_struct, cell_tracking_results_struct, signal_detection_results_struct.is_noise_matrix, options, make_movies);
+        elseif strcmp(options.processing_options.cseg_mode,'circle')
+            cw.plot.cell_segmentation_and_tracking_circle('both',well_tracking_results_struct.wells, ...
+                cell_segmentation_results_struct, cell_tracking_results_struct, signal_detection_results_struct.is_noise_matrix, options, make_movies);
+        else
+            error('unrecognized cell segmentation mode')
+        end
     end
 
     % overlay

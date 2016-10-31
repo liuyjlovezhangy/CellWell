@@ -1,5 +1,7 @@
 function well_segmentation_results_struct = segment_wells_otsu( im_bf, o )
 
+    error('im_bf should be im now. fix')
+
     num_frames = size(im_bf,3);
     
     well_segmentation_results_struct = [];

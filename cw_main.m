@@ -1,7 +1,26 @@
 function cw_main(options_file)
+
+%     if ~exist('options_file','var')
+% 
+%         [filename, path] = uigetfile('*.m', 'Select CellWell configuration script...');
+%         
+%         options_file = [path filename];
+%         
+%         if filename == 0
+%             return
+%         end
+%     end
+% 
+%     try
+%         asdf
+%         options = evalf(options_file);
+%     catch e
+%        return 
+%     end
     
     if ~exist('options_file','var')
-        [filename, path] = uigetfile('*.m', 'Select CellWell configuration script...');
+
+        [filename, path] = uigetfile('*.mat', 'Select CellWell configuration .mat...');
         
         options_file = [path filename];
         
@@ -10,7 +29,7 @@ function cw_main(options_file)
         end
     end
 
-    options = evalf(options_file);
+    options = importdata(options_file);
     
     processing_options = options.processing_options;
     analysis_options = options.analysis_options;
@@ -53,11 +72,11 @@ function cw_main(options_file)
     end
     
     mkdir([full_filename '__analysis_results/movies'])
-    mkdir([full_filename '__analysis_results/runs'])
-    
-    analysis_timestamp = strrep(datestr(now),':','-');    
-    mkdir([full_filename '__analysis_results/runs/' analysis_timestamp])
-    mkdir([full_filename '__analysis_results/runs/' analysis_timestamp '/movies'])
+%     mkdir([full_filename '__analysis_results/runs'])
+%     
+%     analysis_timestamp = strrep(datestr(now),':','-');    
+%     mkdir([full_filename '__analysis_results/runs/' analysis_timestamp])
+%     mkdir([full_filename '__analysis_results/runs/' analysis_timestamp '/movies'])
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,7 +1,7 @@
 function cell_tracking_results_struct = track_cells( cell_segmentation_results_struct, propts )
-    num_wells = numel(cell_segmentation_results_struct.cell_masks_nowater);
-    num_channels = size(cell_segmentation_results_struct.detected_cell_props_nowater,3);
-    num_frames = size(cell_segmentation_results_struct.detected_cell_props_nowater,2);
+    num_wells = numel(cell_segmentation_results_struct.cell_masks);
+    num_channels = size(cell_segmentation_results_struct.detected_cell_props,3);
+    num_frames = size(cell_segmentation_results_struct.detected_cell_props,2);
     
     cell_tracking_results_struct = [];
     cell_tracking_results_struct.cell_tracks = cell(num_wells,num_channels);
@@ -21,7 +21,7 @@ function cell_tracking_results_struct = track_cells( cell_segmentation_results_s
 
             for frame_idx = 1:num_frames
 
-                cur_objects = cell_segmentation_results_struct.detected_cell_props_water{well_idx,frame_idx,channel_idx};
+                cur_objects = cell_segmentation_results_struct.detected_cell_props{well_idx,frame_idx,channel_idx};
 
                 objects_cell{frame_idx} = cur_objects;
 

@@ -1,4 +1,4 @@
-function cell_segmentation_results_corrected_struct = clean_up_cell_segmentation( cell_segmentation_results_struct, cell_quality_metrics )
+function [cell_segmentation_results_corrected_struct,validation_images] = clean_up_cell_segmentation( cell_segmentation_results_struct, cell_quality_metrics )
     cell_quality_metrics.min_area = -inf; %pixels
     cell_quality_metrics.max_area = inf; %pixels
     
@@ -8,7 +8,6 @@ function cell_segmentation_results_corrected_struct = clean_up_cell_segmentation
     
     cell_segmentation_results_corrected_struct = cell_segmentation_results_struct;
     
-    masks_nowater = cell_segmentation_results_struct.cell_masks_nowater;
     masks_water = cell_segmentation_results_struct.cell_masks_water;
     
     objects_nowater = cell_segmentation_results_struct.detected_cell_props_nowater;
