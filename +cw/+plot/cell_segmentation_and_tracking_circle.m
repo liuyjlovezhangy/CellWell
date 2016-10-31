@@ -1,15 +1,22 @@
 function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmentation_results_struct, cell_tracking_results_struct, is_noise_matrix, options, make_movies, movie_dir)
 
-    warning('cell_segmentation_and_tracking_circle assumes an order to signal, cell and bf channels')
+%%%%%% NOTE: THIS FILE ADJUSTS GAMMA ON YOUR MOVIES IN ORDER TO BE ABLE TO
+%%%%%% PROPERLY SEE DARK OBJECTS
+
+    plopts = options.plot_options;
+
+    warning('cell_segmentation_and_tracking_circle assumes that the cell channels are right next to each other')
 
     num_wells = numel(wells);
     num_frames = size(wells(1).im_well,3);
     num_channels = size(wells(1).im_well,4);
-    num_signal_channels = numel(options.signal_channels);
     
     channel_labels = options.channel_labels;
 
+    cell_channels = sort(options.cell_channels);
+    
     draw_track_len = 15;
+    gamma_adjust = 0.3;
 
     cell_masks_final = cell_segmentation_results_struct.cell_masks;
     
@@ -28,17 +35,33 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
     
     cmaps = {r_map,g_map,b_map};
     
+    if tracking_mode
+        movie_prefix = 'cell_tracking';
+    else
+        movie_prefix = 'cell_segmentation';
+    end
     
+    delete([movie_dir '/' movie_prefix '_*_vid.avi']);
     
     for well_idx = 1:num_wells
-        if make_movies
-            if tracking_mode
-                movie_prefix = 'cell_tracking';
-            else
-                movie_prefix = 'cell_segmentation';
+        
+        cell_counts = zeros(1,num_channels);
+        
+        for frame_idx = 1:num_frames
+            for channel_idx = cell_channels
+                objects = cell_segmentation_results_struct.detected_cell_props{well_idx,frame_idx,channel_idx};
+
+                cell_counts(channel_idx) = max([cell_counts(channel_idx), numel(objects)]);
             end
+        end
+        
+        if any(cell_counts(cell_channels) < plopts.min_cells)
+            continue
+        end
+        
+        if make_movies
             writerObj = VideoWriter([movie_dir '/' movie_prefix '_' num2str(well_idx) '_vid.avi']);
-            writerObj.FrameRate = 15;
+            writerObj.FrameRate = 10;
             writerObj.Quality = 100;
             open(writerObj);
         end
@@ -54,152 +77,41 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
         for frame_idx = 1:num_frames
             clf
 
-            for channel_idx = 1:num_channels-1
+            cell_channels
+            
+            for channel_idx = cell_channels
 
                 objects = cell_segmentation_results_struct.detected_cell_props{well_idx,frame_idx,channel_idx};
     
-                subtightplot(2,3,1)
+                subtightplot(numel(cell_channels),2,2*(channel_idx-cell_channels(1)) + 1)
                     hold all
 
-%                     imagesc(cur_well_img(:,:,frame_idx,channel_idx))
-                    draw_box(cur_well_img(:,:,frame_idx,channel_idx),0,...
+                    draw_box(imadjust(mat2gray(cur_well_img(:,:,frame_idx,channel_idx)),[],[],gamma_adjust),0,...
                         objects,well_idx,channel_idx,frame_idx)
                         if channel_idx == 1
                             title('Original image')
                         end
+                        
+                    ylabel(channel_labels{channel_idx})
+                    
+                subtightplot(numel(cell_channels),2,2*(channel_idx-cell_channels(1)) + 2)
 
-%                 subtightplot(2,3,4)
-%                     hold all
-% 
-%                     imagesc(im_thresh)
-% 
-%                     axis image
-%                     set(gca,'Ydir','Reverse')
-%                     axis off 
-% 
-%                     colormap gray
-% 
-%                     freezeColors
-% 
-%                 subtightplot(2,3,5)
-%                     hold all
-% 
-%                     imagesc(im_thresh)
-% 
-%                     for center_idx = 1:size(centers_contained,1)
-%                         plot(centers_contained(center_idx,1),centers_contained(center_idx,2),'xr','MarkerSize',10,'LineWidth',2)
-%                     end
-% 
-%                     for object_idx = 1:numel(objects)
-%                         pts = objects(object_idx).ConvexHull;
-% 
-%                         plot(pts(:,1),pts(:,2),'g-','LineWidth',3)
-%                     end
-% 
-%                     axis image
-%                     set(gca,'Ydir','Reverse')
-%                     axis off 
-% 
-%                     colormap gray
-% 
-%                     freezeColors
-% 
-%                 subtightplot(2,3,6)
-%                     hold all
-% 
-%                     imagesc(im_thresh_final)
-% 
-%         %             for center_idx = 1:size(centers_contained,1)
-%         %                 plot(centers_contained(center_idx,1),centers_contained(center_idx,2),'xr','MarkerSize',10,'LineWidth',2)
-%         %             end
-% 
-%                     for object_idx = 1:numel(objects_final)
-%                         pts = objects_final(object_idx).ConvexHull;
-% 
-%                         plot(pts(:,1),pts(:,2),'g-','LineWidth',3)
-%                         plot(objects_final(object_idx).Centroid(1),objects_final(object_idx).Centroid(2),'xr','MarkerSize',10,'LineWidth',2)
-%                     end
-% 
-%                     axis image
-%                     set(gca,'Ydir','Reverse')
-%                     axis off 
-% 
-%                     colormap gray
-% 
-%                     freezeColors
-                
-%                 subtightplot(num_signal_channels,4,4*(channel_idx-1) + 1)
-% 
-%                     draw_box(cur_well_img(:,:,frame_idx,channel_idx),0,...
-%                         objects,well_idx,channel_idx,frame_idx)
-%                             if channel_idx == 1
-%                                 title('Original image')
-%                             end
-%                             
-%                     ylabel(channel_labels{channel_idx})
-% 
-%                 subtightplot(num_signal_channels,4,4*(channel_idx-1) + 2)
-% 
-%                     draw_box(watershed_inputs{well_idx}(:,:,frame_idx,channel_idx),2,...
-%                         objects,well_idx,channel_idx,frame_idx)
-%                     if channel_idx == 1
-%                         title('Watershed input')
-%                     end
-% 
-%                 subtightplot(num_signal_channels,4,4*(channel_idx-1) + 3)
-% 
-%                     draw_box(cell_masks_final{well_idx}(:,:,frame_idx,channel_idx),1,...
-%                         objects,well_idx,channel_idx,frame_idx)
-%                     if channel_idx == 1
-%                         title('Final segmentation')
-%                     end
-% 
-%                 subtightplot(num_signal_channels,4,4*(channel_idx-1) + 4,0.15)
-% 
-%                     hold all
-% 
-%                     xvals = thresh_xvals{well_idx}{frame_idx,channel_idx};
-%                     yvals = thresh_yvals{well_idx}{frame_idx,channel_idx};
-%                     
-%                     xvals(yvals <= 0) = [];
-%                     yvals(yvals <= 0) = [];
-%                     
-%                     plot(xvals,yvals,'-k.','LineWidth',3,'MarkerSize',25)
-% 
-%                     set(gca,'yscale','log')
-%                     set(gca,'xscale','log')
-% 
-%                     if ~isempty(threshold_levels{well_idx}{frame_idx,channel_idx})
-%                         line([threshold_levels{well_idx}{frame_idx,channel_idx}.level threshold_levels{well_idx}{frame_idx,channel_idx}.level],ylim,'LineStyle','--','Color','k','LineWidth',3)
-%                     end
-% 
-%                     xlabel('Normalized pixel intensity')
-%                     ylabel('Average object area (px)')
-% 
-%                     if channel_idx == 1
-%                         title('Adaptive thresholding')
-%                     end
-% 
-%                     pos = get(gca,'OuterPosition');
-%                     set(gca,'OuterPosition',[pos(1), pos(2) + 0.01, pos(3), pos(4)])
-% 
-%                     box on
-%                     grid on
-%                     
-%                     if ~isempty(xvals)
-%                         xlim([min(xvals),max(xvals)])
-%                     end
+                    draw_box(cell_masks_final{well_idx}(:,:,frame_idx,channel_idx),1,...
+                        objects,well_idx,channel_idx,frame_idx)
+                    if channel_idx == 1
+                        title('Final segmentation')
+                    end
             end
 
             suptitle(['Cell segmentation and tracking. Well: ' num2str(well_idx) ' frame: ' num2str(frame_idx)])
 
             set(findall(gcf,'type','text'),'fontSize',16,'fontWeight','bold')
-            set(findall(gcf,'type','axes'),'fontSize',16,'fontWeight','bold','LineWidth',3)
+            set(findall(gcf,'type','axes'),'fontSize',16,'fontWeight','bold','LineWidth',5)
             set(gcf, 'color', 'white');
             
-            set(gcf,'Position',[0 0 1200 1000]);
-            fig = gcf;
-            fig.PaperPositionMode = 'auto';
+%             set(gcf,'Position',[0 0 1200 1000]);
+%             fig = gcf;
+%             fig.PaperPositionMode = 'auto';
 
             drawnow
 
@@ -229,8 +141,11 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
         hold all
 
         if image_mode == 1
-            rgb = label2rgb(cur_slice,'jet',0);
+            
+            rgb = label2rgb(cur_slice,'jet',0.8*[1 1 1]);
             imagesc(rgb)
+            
+            box on
         else
             imagesc(cur_slice)
         end
@@ -257,27 +172,13 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
                 first_draw_track_frame = max([1, frame_idx-draw_track_len]);
                 
                 track = cell_tracks{track_idx};
-
-%                 track_nan_start_idx = find(~isnan(sum(track,1)),1,'first');
-%                 track_nan_end_idx = find(~isnan(sum(track,1)),1,'last');
-% 
-% %                             padded_track_cmap = [ones(track_nan_start_idx-1,3); track_cmap; ones(size(cur_well_img,3) - track_nan_last_idx,3)];
-% 
-%                 final_start = max([first_draw_track_frame, track_nan_start_idx]);
-%                 final_end = min([frame_idx, track_nan_end_idx]);
-% 
-%                 track_cmap = spring(numel(final_start:final_end));
-                
-%                 if isempty(final_start)
-%                     continue
-%                 end
                 
                 marker_color = {'y','k','w'};
                 line_color = {  'g','m','m';
                                 'r','m','m';
                                 'g','m','m'};
                 
-                plot(track(1,frame_idx),track(2,frame_idx),'x','MarkerSize',20,'LineWidth',3,'Color',marker_color{image_mode+1});
+                plot(track(1,frame_idx),track(2,frame_idx),'x','MarkerSize',10,'LineWidth',3,'Color',marker_color{image_mode+1});
                 plot(track(1,first_draw_track_frame:frame_idx),track(2,first_draw_track_frame:frame_idx),'-','LineWidth',3,'Color',line_color{channel_idx,image_mode+1})
 
             end
@@ -286,11 +187,12 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
         axis image
         set(gca,'Ydir','Reverse')
 %         axis off
+        
         set(gca,'Color','white')
         set(gca,'XTick',[])
         set(gca,'YTick',[])
 
-        cw.plot.noise_box(is_noise_matrix(well_idx,channel_idx,frame_idx));
+%         cw.plot.noise_box(is_noise_matrix(well_idx,channel_idx,frame_idx));
 
         dist = cell_masks_final{well_idx}(:,:,frame_idx,channel_idx);
         dist = dist(:);

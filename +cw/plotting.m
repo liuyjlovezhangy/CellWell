@@ -122,10 +122,12 @@ function plotting(options)
         
         if strcmp(options.processing_options.cseg_mode,'simple')
             cw.plot.cell_segmentation_and_tracking_simple('both',well_tracking_results_struct.wells, ...
-                cell_segmentation_results_struct, cell_tracking_results_struct, signal_detection_results_struct.is_noise_matrix, options, make_movies);
+                cell_segmentation_results_struct, cell_tracking_results_struct, signal_detection_results_struct.is_noise_matrix, options, make_movies,...
+            [full_filename '__analysis_results/movies']);
         elseif strcmp(options.processing_options.cseg_mode,'circle')
             cw.plot.cell_segmentation_and_tracking_circle('both',well_tracking_results_struct.wells, ...
-                cell_segmentation_results_struct, cell_tracking_results_struct, signal_detection_results_struct.is_noise_matrix, options, make_movies);
+                cell_segmentation_results_struct, cell_tracking_results_struct, signal_detection_results_struct.is_noise_matrix, options, make_movies,...
+            [full_filename '__analysis_results/movies']);
         else
             error('unrecognized cell segmentation mode')
         end

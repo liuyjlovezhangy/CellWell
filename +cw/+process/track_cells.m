@@ -1,4 +1,9 @@
-function cell_tracking_results_struct = track_cells( cell_segmentation_results_struct, propts )
+function cell_tracking_results_struct = track_cells( cell_segmentation_results_struct, options )
+
+    warning('something is really broken here for the 1 cell example movie...')
+
+    propts = options.processing_options;
+
     num_wells = numel(cell_segmentation_results_struct.cell_masks);
     num_channels = size(cell_segmentation_results_struct.detected_cell_props,3);
     num_frames = size(cell_segmentation_results_struct.detected_cell_props,2);
@@ -14,7 +19,7 @@ function cell_tracking_results_struct = track_cells( cell_segmentation_results_s
     % build a list of all cell locations throughout time
 
     for well_idx = 1:num_wells
-        for channel_idx = 1:num_channels
+        for channel_idx = options.cell_channels
             objects_cell = cell(1,num_frames);
 
             localization_array = [];

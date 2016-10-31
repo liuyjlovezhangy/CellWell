@@ -206,7 +206,7 @@ function process(options)
         
         disp('Tracking cells in each well...')
         
-        cell_tracking_results_struct = cw.process.track_cells( cell_segmentation_results_struct, propts );
+        cell_tracking_results_struct = cw.process.track_cells( cell_segmentation_results_struct, options );
         
         disp('Saving cell tracking results....')
         
