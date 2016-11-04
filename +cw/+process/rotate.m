@@ -16,7 +16,7 @@ function im_rotate = rotate( im, angle_channel )
         
         multiWaitbar('Detecting rotation angle...',frame_idx/num_frames);
     end
-    
+
     angle = mean(angles);
     
     multiWaitbar('CloseAll');
@@ -31,6 +31,6 @@ function im_rotate = rotate( im, angle_channel )
         
         multiWaitbar('Rotating...',frame_idx/num_frames);
     end
-
+    
 end
 

@@ -154,7 +154,7 @@ function plotting(options)
         
         cw.plot.cell_overlays(well_tracking_results_struct.wells, ...
             signal_detection_results_struct, cell_segmentation_results_struct,...
-            cell_tracking_results_struct, make_movies, [full_filename '__analysis_results/movies']);
+            cell_tracking_results_struct, options, make_movies, [full_filename '__analysis_results/movies']);
     end
 end
 

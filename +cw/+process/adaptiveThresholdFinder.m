@@ -20,8 +20,12 @@ end
 
 
 %Find optimal threshold level (first peak of mean volume curve after initial neg slope)
-sm = movingmean(vols_mean',3,[],[],1);
-sm2deriv = movingmean(diff(diff(sm)),3,[],[],1);
+% sm = movingmean(vols_mean',3,[],[],1);
+% sm2deriv = movingmean(diff(diff(sm)),3,[],[],1);
+
+sm = smooth(vols_mean,3);
+sm2deriv = smooth(diff(diff(sm)),3);
+
 max2deriv = max(sm2deriv(1:end-2));
 if max2deriv > 0, minidx2deriv = find(sm2deriv>max2deriv/3,1); %find beginning of first significant peak in second derivative (i.e. first end of a negative slope)
 else minidx2deriv = find(sm2deriv>(max2deriv-sm2deriv(1))/3,1); end
@@ -101,7 +105,8 @@ end
 % disp(level)
 
 xvals = 10.^[start:threshold_density:-0.1];
-yvals = movingmean(vols_mean',3,[],[],1);
+% yvals = movingmean(vols_mean',3,[],[],1);
+yvals = smooth(vols_mean,3);
 
 %hold on
 

@@ -1,14 +1,14 @@
-function movie_file = plot_cell_overlays(wells, signal_detection_results_struct, cell_segmentation_results_struct, cell_tracking_results_struct, make_movies, movie_dir)
+function cell_overlays(wells, signal_detection_results_struct, cell_segmentation_results_struct, cell_tracking_results_struct, options, make_movies, movie_dir)
 
-%     make_movies = 0;
+    warning('cell_overlays currently only works for a 4 channel movie with signal / cell channels / brightfield')
+
+    delete([movie_dir '/cell_overlays_*_vid.avi'])
 
     is_noise_matrix = signal_detection_results_struct.is_noise_matrix;
     
     draw_track_len = 15;
 
-    movie_file = [movie_dir '/*.avi'];
-
-    cell_masks_final = cell_segmentation_results_struct.cell_masks_final;
+    cell_masks_final = cell_segmentation_results_struct.cell_masks;
 
     num_colors = 2^16;
     
@@ -40,7 +40,7 @@ function movie_file = plot_cell_overlays(wells, signal_detection_results_struct,
         ylim([0 1])
         axis off
         
-        legend('K562','CD19 CART','SYTOX')
+        legend(options.channel_labels)
         
     set(findall(gcf,'type','text'),'fontSize',20,'fontWeight','bold')
     set(findall(gcf,'type','axes'),'fontSize',20,'fontWeight','bold','LineWidth',3)
@@ -51,7 +51,7 @@ function movie_file = plot_cell_overlays(wells, signal_detection_results_struct,
     for well_idx = 1:num_wells
         if make_movies
             writerObj = VideoWriter([movie_dir '/cell_overlays_' num2str(well_idx) '_vid.avi']);
-            writerObj.FrameRate = 12;
+            writerObj.FrameRate = 8;
             writerObj.Quality = 100;
             open(writerObj);
         end
@@ -60,8 +60,8 @@ function movie_file = plot_cell_overlays(wells, signal_detection_results_struct,
         
         for frame_idx = 1:num_frames;
             objects = [];
-            for channel_idx = 1:num_channels
-                objects = [objects, cell_segmentation_results_struct.detected_cell_props_final{well_idx,frame_idx,channel_idx}];
+            for channel_idx = options.cell_channels
+                objects = [objects, cell_segmentation_results_struct.detected_cell_props{well_idx,frame_idx,channel_idx}];
             end
             
             figure(1833)
@@ -91,7 +91,7 @@ function movie_file = plot_cell_overlays(wells, signal_detection_results_struct,
 
             set(gcf,'Position',[0 0 1400 700]);
             fig = gcf;
-            fig.PaperPositionMode = 'auto';
+%             fig.PaperPositionMode = 'auto';
             
             drawnow
 
@@ -122,25 +122,28 @@ function movie_file = plot_cell_overlays(wells, signal_detection_results_struct,
         ylim([1, size(cur_slice,1)])
         
         if image_mode == 1
-            cmap = [0 0 0;1,0,0;0,1,0;1,0,1];
+            cmap = [0 0 0;1,0,0;0,1,0;0,0,1;1,0,1];
             
-            combined_layers = ones(size(cur_slice,1),size(cur_slice,2));
+            combined_layers = zeros(size(cur_slice,1),size(cur_slice,2),size(cur_slice,3));
+            combined_layers(:,:,1) = 1;
             
             border_layer = zeros(size(cur_slice,1),size(cur_slice,2));
-            objects_layer = zeros(size(cur_slice,1),size(cur_slice,2),num_channels);
+            objects_layer = zeros(size(cur_slice,1),size(cur_slice,2),size(cur_slice,3));
             
-            for channel_box_idx = 1:num_channels
-                layer = cur_slice(:,:,channel_box_idx);
+            for channel_box_idx = options.cell_channels
+                layer = cur_slice(:,:,channel_box_idx);          
                 
-                border_layer(layer == 0) = 1;
+                border_layer(layer == 1) = 1;
                 objects_layer(:,:,channel_box_idx) = layer > 1;
                 
             end
             
-            for channel_box_idx = 1:num_channels
-                combined_layers = combined_layers + channel_box_idx*objects_layer(:,:,channel_box_idx);
+            for channel_box_idx = options.cell_channels
+                combined_layers(:,:,channel_box_idx) = (channel_box_idx - options.cell_channels(1) + 1)*objects_layer(:,:,channel_box_idx);
             end
             
+            combined_layers = sum(combined_layers,3);
+
             combined_layers(logical(border_layer)) = 0;
             
             rgb = label2rgb(combined_layers,cmap, [.7 .7 .7]);
@@ -172,8 +175,11 @@ function movie_file = plot_cell_overlays(wells, signal_detection_results_struct,
                                 'w','w';
                                 'w','w';
                                 };
-                plot(track(1,frame_idx),track(2,frame_idx),'x','MarkerSize',20,'LineWidth',3,'Color',marker_color{image_mode+1});
-                plot(track(1,first_draw_track_frame:frame_idx),track(2,first_draw_track_frame:frame_idx),'-','LineWidth',3,'Color',line_color{channel_box_idx,image_mode+1})
+                            
+                if frame_idx <= size(track,2)
+                    plot(track(1,frame_idx),track(2,frame_idx),'x','MarkerSize',20,'LineWidth',3,'Color',marker_color{image_mode+1});
+                    plot(track(1,first_draw_track_frame:frame_idx),track(2,first_draw_track_frame:frame_idx),'-','LineWidth',3,'Color',line_color{channel_box_idx,image_mode+1})
+                end
             end
         end
 
@@ -181,7 +187,7 @@ function movie_file = plot_cell_overlays(wells, signal_detection_results_struct,
         set(gca,'Ydir','Reverse')
         axis off
 
-        cw.plot.noise_box(~any(squeeze(~is_noise_matrix(well_idx,:,frame_idx))));
+%         cw.plot.noise_box(~any(squeeze(~is_noise_matrix(well_idx,:,frame_idx))));
 
         freezeColors
     end

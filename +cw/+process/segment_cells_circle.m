@@ -72,7 +72,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                     
                     im_thresh = threshold3D(im_expanded, cur_threshold_levels{frame_idx,channel_idx}.level);
                     
-                    if propts.debug_seg
+                    if propts.cseg_debug
                         figure(1372)
                         clf
                         
@@ -158,7 +158,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                     
                     im_thresh_final = zeros(size(im_thresh));
                     
-                    if numel(centers) ~= 0
+                    if numel(centers) ~= 0 && ~isempty(objects)
                         
                         for object_idx = 1:numel(objects)
                             ch = objects(object_idx).ConvexHull;
@@ -336,7 +336,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
 
                     end
                     
-                    if propts.debug_seg
+                    if propts.cseg_debug
                         figure(10394)
                         clf
 
@@ -440,7 +440,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
 
                                 freezeColors
                         
-                        pause
+%                         pause
                     end
                 end
 

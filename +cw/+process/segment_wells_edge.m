@@ -43,17 +43,45 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_edge(i
         
         cur_frame = im_bf(:,:,frame_idx);
         
+        %%% uneven illumination && background subtract
+        im_bknd(:,:,frame_idx) = imtophat(cur_frame,strel('disk',40));
+        
         %%% subtract background
-        im_bknd(:,:,frame_idx) = cur_frame - imopen(cur_frame,strel('disk',60));
+%         im_bknd(:,:,frame_idx) = cur_frame - imopen(cur_frame,strel('disk',60));
         
         %%% remove noise
         im_noise(:,:,frame_idx) = wiener2(im_bknd(:,:,frame_idx), [5,5]);
         
         %%% contrast adjust
-        im_contrast(:,:,frame_idx) = imadjust(im_noise(:,:,frame_idx),[0.1 0.4],[],0.20);
+        im_contrast(:,:,frame_idx) = imadjust(im_noise(:,:,frame_idx),[],[],0.90);
         
         %%% edge detection / segmentation
-        im_edge(:,:,frame_idx) = edge(im_contrast(:,:,frame_idx),'canny');
+%         im_edge(:,:,frame_idx) = edge(im_contrast(:,:,frame_idx),'canny');
+        x = 1;
+        mu = -1;
+        sigma = 20;
+        sigma_width = 10;
+
+        otsu_max = 2;
+        num_otsu = 5;
+        
+%         data_out = plus_filt2D(im_noise(:,:,frame_idx),x,mu,sigma,sigma_width);
+% 
+%         data_out = mat2gray(data_out);
+%         
+%         [otsu_image,~,thresh] = otsu(data_out,num_otsu);
+        otsu_input = im_contrast(:,:,frame_idx);
+        otsu_input(otsu_input==0) = NaN;
+        
+        [otsu_out,~,thresh] = otsu(otsu_input,num_otsu);
+        
+        edge_input = im_contrast(:,:,frame_idx);
+        edge_input(otsu_out(:) > otsu_max) = 0;
+        
+%         
+%         im_edge(:,:,frame_idx) = data_out < thresh(1);
+
+        im_edge(:,:,frame_idx) = edge(edge_input,'canny');
 
         %%% line dilating / closing      
         sedilate_x = strel('line',3,90);
@@ -70,6 +98,135 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_edge(i
         %%% opening
         seopen = strel('rectangle',[50,50]);
         im_open(:,:,frame_idx) = imopen(im_fill(:,:,frame_idx),seopen);
+        
+        if options.processing_options.wseg_debug
+            figure(14332)
+            clf
+            
+                subtightplot(2,4,1)
+                    hold all
+                    
+                    imagesc(im_bknd(:,:,frame_idx))
+                    
+                    colormap gray
+                    
+                    axis image
+                    set(gca,'Ydir','Reverse')
+
+                    set(gca,'Color','white')
+                    set(gca,'XTick',[])
+                    set(gca,'YTick',[])
+                    
+                subtightplot(2,4,2)
+                    hold all
+                    
+                    imagesc(im_noise(:,:,frame_idx))
+                    
+                    colormap gray
+                    
+                    axis image
+                    set(gca,'Ydir','Reverse')
+
+                    set(gca,'Color','white')
+                    set(gca,'XTick',[])
+                    set(gca,'YTick',[])
+                    
+                subtightplot(2,4,3)
+                    hold all
+                    
+                    imagesc(im_contrast(:,:,frame_idx))
+                    
+                    colormap gray
+                    
+                    axis image
+                    set(gca,'Ydir','Reverse')
+
+                    set(gca,'Color','white')
+                    set(gca,'XTick',[])
+                    set(gca,'YTick',[])
+                    
+                subtightplot(2,4,4)
+                    hold all
+                    a = im_contrast(:,:,frame_idx);
+                    hist(a(:),100)
+                    
+                    for thresh_idx = 1:numel(thresh)
+                        line([thresh(thresh_idx) thresh(thresh_idx)], ylim,'Color','k','LineWidth',3,'LineStyle','--')
+                    end
+                    
+%                     imagesc(otsu_image)
+%                     
+%                     colormap gray
+%                     
+%                     axis image
+%                     set(gca,'Ydir','Reverse')
+% 
+%                     set(gca,'Color','white')
+%                     set(gca,'XTick',[])
+%                     set(gca,'YTick',[])
+                    
+                subtightplot(2,4,5)
+                    hold all
+                    
+                    imagesc(otsu_out)
+%                     imagesc(im_edge(:,:,frame_idx))
+                    
+                    colormap gray
+                    
+                    axis image
+                    set(gca,'Ydir','Reverse')
+
+                    set(gca,'Color','white')
+                    set(gca,'XTick',[])
+                    set(gca,'YTick',[])
+                    
+                
+                    
+                subtightplot(2,4,6)
+                    hold all
+                    
+                    imagesc(im_close(:,:,frame_idx))
+                    
+                    colormap gray
+                    
+                    axis image
+                    set(gca,'Ydir','Reverse')
+
+                    set(gca,'Color','white')
+                    set(gca,'XTick',[])
+                    set(gca,'YTick',[])
+                    
+                subtightplot(2,4,7)
+                    hold all
+                    
+                    imagesc(im_fill(:,:,frame_idx))
+                    
+                    colormap gray
+                    
+                    axis image
+                    set(gca,'Ydir','Reverse')
+
+                    set(gca,'Color','white')
+                    set(gca,'XTick',[])
+                    set(gca,'YTick',[])
+                    
+                subtightplot(2,4,8)
+                    hold all
+                    
+                    imagesc(im_open(:,:,frame_idx))
+                    
+                    colormap gray
+                    
+                    axis image
+                    set(gca,'Ydir','Reverse')
+
+                    set(gca,'Color','white')
+                    set(gca,'XTick',[])
+                    set(gca,'YTick',[])
+                    
+%                     error
+                    pause
+        end
         
         multiWaitbar('Segmenting...',frame_idx/num_frames);
     end

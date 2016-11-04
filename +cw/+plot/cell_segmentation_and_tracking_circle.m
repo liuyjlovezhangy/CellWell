@@ -76,8 +76,6 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
         
         for frame_idx = 1:num_frames
             clf
-
-            cell_channels
             
             for channel_idx = cell_channels
 
