@@ -24,7 +24,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
     
     validation_images = cell(1,num_channels * num_wells);
     
-    for well_idx = 1:num_wells%9
+    for well_idx = 1:num_wells%8
         
         cur_well_im = mat2gray(well_tracking_results_struct.wells(well_idx).im_well);
         cur_well_im_thresh = zeros(size(cur_well_im,1),size(cur_well_im,2),num_frames,num_channels);
@@ -36,14 +36,13 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
 
         multiWaitbar('Current well...',0);
 
-        for frame_idx = 1:num_frames%9
+        for frame_idx = 1:num_frames
 
             for channel_idx = options.tracking_channels
                 
                 if signal_detection_results_struct.is_noise_matrix(well_idx,channel_idx,frame_idx)
                     im_thresh_final = zeros(size(cur_well_im,1),size(cur_well_im,2));
                 else
-%                     im_thresh_final = zeros(size(cur_well_im,1),size(cur_well_im,2));
                     
                     if frame_idx > 1 
                         levels_prev = cur_threshold_levels{frame_idx-1,channel_idx};
@@ -58,7 +57,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                     
                     im_contrast = imadjust(im_slice,[],[],0.50);
                     im_expanded = imresize(im_contrast,2,'method','bicubic');
-                    im_expanded = convolveGaussian(im_expanded,2);
+                    im_expanded = convolveGaussian(im_expanded,3.5);
                     im_expanded = imsharpen(im_expanded);
 
                     %%% Hough circle detection
@@ -79,8 +78,8 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                     
                     % kill connections between objects
     
-                    se = strel('disk',8);
-                    im_thresh = imopen(im_thresh,se);
+                    seopen = strel('disk',3);
+                    im_thresh = imopen(im_thresh,seopen);
 
                     % Clear very small objects
                     im_thresh = bwareaopen(im_thresh, 6);
@@ -91,6 +90,8 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                     im_expanded_thresholded = reshape(im_expanded_thresholded,size(im_expanded));
                     
                     [centers,radii] = imfindcircles(im_expanded_thresholded,[5 20],'Sensitivity',0.85,'EdgeThreshold',0.05);
+                    
+                    [centers,radii]=RemoveOverLap(centers,radii,10,4);
                     
                     if propts.cseg_debug
                         figure(1372)
@@ -287,6 +288,8 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                         end
 
                         centers_contained = centers(contained,:);
+%                     else
+%                         centers_contained = [];
                     end
                     
                     im_thresh_final = bwlabeln(im_thresh_final,4);
