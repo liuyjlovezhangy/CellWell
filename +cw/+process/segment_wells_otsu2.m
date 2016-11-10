@@ -1,4 +1,4 @@
-function [well_segmentation_results_struct, im_seg_final] = segment_wells_edge(im, options)
+function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(im, options)
 
     im_bf = im(:,:,:,options.bf_channel);
 
@@ -44,8 +44,8 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_edge(i
         cur_frame = im_bf(:,:,frame_idx);
         
         %%% uneven illumination && background subtract
-        im_bknd(:,:,frame_idx) = imtophat(cur_frame,strel('disk',40));
-        
+        im_bknd(:,:,frame_idx) = imtophat(cur_frame,strel('disk',60));
+%         im_bknd(:,:,frame_idx) = cur_frame;
         %%% subtract background
 %         im_bknd(:,:,frame_idx) = cur_frame - imopen(cur_frame,strel('disk',60));
         
@@ -53,14 +53,20 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_edge(i
         im_noise(:,:,frame_idx) = wiener2(im_bknd(:,:,frame_idx), [5,5]);
         
         %%% contrast adjust
-        im_contrast(:,:,frame_idx) = imadjust(im_noise(:,:,frame_idx),[],[],0.90);
+        d=10;
+        order=2000;
+        [r, c]=size(im_noise(:,:,frame_idx));
+
+%         im_contrast(:,:,frame_idx) = mat2gray(homofil(im_noise(:,:,frame_idx),d,r,c,order));
+        
+        im_contrast(:,:,frame_idx) = imadjust(im_noise(:,:,frame_idx),[],[],0.8);
         
         %%% edge detection / segmentation
 %         im_edge(:,:,frame_idx) = edge(im_contrast(:,:,frame_idx),'canny');
-        x = 1;
-        mu = -1;
-        sigma = 20;
-        sigma_width = 10;
+%         x = 1;
+%         mu = -1;
+%         sigma = 20;
+%         sigma_width = 10;
 
         otsu_max = 2;
         num_otsu = 5;
@@ -81,24 +87,26 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_edge(i
 %         
 %         im_edge(:,:,frame_idx) = data_out < thresh(1);
 
-        im_edge(:,:,frame_idx) = edge(edge_input,'canny');
+        im_edge(:,:,frame_idx) = edge_input;%edge(edge_input,'canny');
 
         %%% line dilating / closing      
         sedilate_x = strel('line',3,90);
         sedilate_y = strel('line',3,0);
-        seclose = strel('rectangle',[3 3]);
+        seclose = strel('rectangle',[6 6]);
         
         im_close(:,:,frame_idx) = imdilate(im_edge(:,:,frame_idx),sedilate_x);
         im_close(:,:,frame_idx) = imdilate(im_close(:,:,frame_idx),sedilate_y);
-        im_close(:,:,frame_idx) = imclearborder(imclose(im_close(:,:,frame_idx),seclose));
+        im_close(:,:,frame_idx) = imclose(im_close(:,:,frame_idx),seclose);
         
         %%% fill holes
-        im_fill(:,:,frame_idx) = imfill(im_close(:,:,frame_idx),'holes');
+        im_fill(:,:,frame_idx) = imfill(imclearborder(im_close(:,:,frame_idx)),'holes');
         
         %%% opening
-        seopen = strel('rectangle',[50,50]);
-        im_open(:,:,frame_idx) = imopen(im_fill(:,:,frame_idx),seopen);
+%         seopen = strel('rectangle',[50,50]);
+%         im_open(:,:,frame_idx) = imopen(im_fill(:,:,frame_idx),seopen);
         
+        im_open(:,:,frame_idx) = im_fill(:,:,frame_idx);
+
         if options.processing_options.wseg_debug
             figure(14332)
             clf
@@ -317,7 +325,7 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_edge(i
             for col_idx = 1:options.well_counts(2)
                 start_i = round(extrema_extrema_y(frame_idx,1)) + (row_idx-1) * well_well_dist_height;
                 end_i = start_i + options.well_height;
-                start_j = round(extrema_extrema_x(frame_idx,1)) + (col_idx-1) * well_well_dist_width;
+                start_j = round(extrema_extrema_x(frame_idx,1)) + (col_idx-1) * well_well_dist_width + options.processing_options.wseg_otsu2_left_offset;
                 end_j = start_j + options.well_width;
 
                 mask_final(start_i:end_i, start_j:end_j, frame_idx) = 1;

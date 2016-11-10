@@ -9,8 +9,8 @@ function plotting(options)
     im = importdata([full_filename '__analysis_results/input_movie.mat']);
     im = mat4D_to_gray(im);
     
-    well_segmentation_results_struct = [];
-    well_tracking_results_struct = [];
+    well_segmentation_results_struct = importdata([full_filename '__analysis_results/well_segmentation.mat']);
+    well_tracking_results_struct = cw.process.track_wells( im, well_segmentation_results_struct, options );
     signal_detection_results_struct = [];
     cell_segmentation_results_struct = [];
     cell_tracking_results_struct = [];
@@ -19,10 +19,6 @@ function plotting(options)
     %%% Well segmentation-related movies
     
     if plopts.well_segmentation
-        if isempty(well_segmentation_results_struct)
-            well_segmentation_results_struct = importdata([full_filename '__analysis_results/well_segmentation.mat']);
-        end
-        
         cw.plot.well_segmentation(well_segmentation_results_struct, im(:,:,:,options.bf_channel),...
             make_movies, [full_filename '__analysis_results/movies']);
     end
@@ -30,13 +26,6 @@ function plotting(options)
     % Plot well trajectories
     
     if plopts.well_tracks
-        if isempty(well_segmentation_results_struct)
-            well_segmentation_results_struct = importdata([full_filename '__analysis_results/well_segmentation.mat']);
-        end
-        
-        if isempty(well_tracking_results_struct)
-           well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
-        end
         
         cw.plot.well_tracks(im, well_tracking_results_struct.im_shifted, well_segmentation_results_struct, ...
             well_tracking_results_struct, make_movies, [full_filename '__analysis_results/movies'] );
@@ -46,9 +35,6 @@ function plotting(options)
     % plot well fluorescence
     
     if plopts.well_by_well
-        if isempty(well_tracking_results_struct)
-           well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
-        end
         
         cw.plot.well_by_well(well_tracking_results_struct, make_movies,...
             [full_filename '__analysis_results/movies']);        
@@ -60,9 +46,6 @@ function plotting(options)
     % signal
     
     if plopts.noise_detection
-        if isempty(well_tracking_results_struct)
-           well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
-        end
         
         if isempty(signal_detection_results_struct)
            signal_detection_results_struct = importdata([full_filename '__analysis_results/noise_detection.mat']);
@@ -76,9 +59,6 @@ function plotting(options)
     % segmentation
     
     if plopts.cell_segmentation
-        if isempty(well_tracking_results_struct)
-           well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
-        end
         
         if isempty(cell_segmentation_results_struct)
            cell_segmentation_results_struct = importdata([full_filename '__analysis_results/cell_segmentation.mat']);
@@ -104,9 +84,6 @@ function plotting(options)
     % tracking
     
     if plopts.cell_tracking
-        if isempty(well_tracking_results_struct)
-           well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
-        end
         
         if isempty(cell_segmentation_results_struct)
            cell_segmentation_results_struct = importdata([full_filename '__analysis_results/cell_segmentation.mat']);
@@ -136,9 +113,6 @@ function plotting(options)
     % overlay
     
     if plopts.cell_overlay
-        if isempty(well_tracking_results_struct)
-           well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
-        end
         
         if isempty(cell_segmentation_results_struct)
            cell_segmentation_results_struct = importdata([full_filename '__analysis_results/cell_segmentation.mat']);

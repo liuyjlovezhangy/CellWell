@@ -15,11 +15,12 @@ function cell_tracking_results_struct = track_cells( cell_segmentation_results_s
     link_params.mode = propts.ctrk_mode;
     link_params.searchrad = propts.ctrk_searchrad;
     link_params.gap_close = propts.ctrk_gap_close;
+    link_params.total_num_frames = num_frames;
     
     % build a list of all cell locations throughout time
 
     for well_idx = 1:num_wells
-        for channel_idx = options.cell_channels
+        for channel_idx = options.tracking_channels
             objects_cell = cell(1,num_frames);
 
             localization_array = [];

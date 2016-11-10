@@ -3,6 +3,8 @@ function im_register = register( im, registration_channel )
         registration_channel = 1;
     end
 
+    warning('register: I have not optimized this function yet and it may actually make things worse...')
+    
     usfac = 1;
 
     multiWaitbar('CloseAll');
@@ -12,6 +14,18 @@ function im_register = register( im, registration_channel )
     
     num_frames = size(im,3);
     num_channels = size(im,4);
+    
+    % clean up images
+    
+    se = strel('disk',3);
+    
+    for frame_idx = 1:num_frames
+        im(:,:,frame_idx,registration_channel) = wiener2(im(:,:,frame_idx,registration_channel));
+        
+        im(:,:,frame_idx,registration_channel) = imopen(im(:,:,frame_idx,registration_channel),se);
+    end
+    
+    % register
     
     for frame_idx = 1:num_frames
         [output, ~] = dftregistration(fft2(im(:,:,1,registration_channel)),fft2(im(:,:,frame_idx,registration_channel)),usfac);

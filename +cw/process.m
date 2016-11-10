@@ -77,8 +77,8 @@ function process(options)
         
         if strcmp(propts.wseg_mode,'otsu')
             [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_otsu( im, options );
-        elseif strcmp(propts.wseg_mode,'edge')
-            [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_edge( im, options );
+        elseif strcmp(propts.wseg_mode,'otsu2')
+            [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_otsu2( im, options );
         else
             error('Unrecognized well segmentation mode.')
         end
@@ -102,24 +102,32 @@ function process(options)
         well_segmentation_results_struct = importdata([full_filename '__analysis_results/well_segmentation.mat']);
     end
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Perform well tracking to link wells from frame to frame
+    %%% This generates super large files so now we just compute it every
+    %%% time because it is computationally very fast.
     
-    if propts.start_at <= 2 || ~exist([full_filename '__analysis_results/well_tracking.mat'],'file')
+    disp('Performing well tracking...')
+        
+    well_tracking_results_struct = cw.process.track_wells( im, well_segmentation_results_struct, options );
     
-        disp('Performing well tracking...')
-        
-        well_tracking_results_struct = cw.process.track_wells( im, well_segmentation_results_struct, options );
     
-        disp('Saving well tracking results...')
-        
-        save([full_filename '__analysis_results/well_tracking.mat'],'well_tracking_results_struct','-v7.3')
-
-    else
-        disp('Loading previous well tracking...')
-        
-        well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
-    end
+    
+%     if propts.start_at <= 2 || ~exist([full_filename '__analysis_results/well_tracking.mat'],'file')
+%     
+%         disp('Performing well tracking...')
+%         
+%         well_tracking_results_struct = cw.process.track_wells( im, well_segmentation_results_struct, options );
+%     
+%         disp('Saving well tracking results...')
+%         
+%         save([full_filename '__analysis_results/well_tracking.mat'],'well_tracking_results_struct','-v7.3')
+% 
+%     else
+%         disp('Loading previous well tracking...')
+%         
+%         well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
+%     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Well-by-well detection of signal presence

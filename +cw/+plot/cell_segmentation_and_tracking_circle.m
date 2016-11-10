@@ -13,10 +13,10 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
     
     channel_labels = options.channel_labels;
 
-    cell_channels = sort(options.cell_channels);
+    plot_channels = [options.cell_channels, options.nuclei_channel];
     
     draw_track_len = 15;
-    gamma_adjust = 0.3;
+    gamma_adjust = 0.4;
 
     cell_masks_final = cell_segmentation_results_struct.cell_masks;
     
@@ -48,14 +48,14 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
         cell_counts = zeros(1,num_channels);
         
         for frame_idx = 1:num_frames
-            for channel_idx = cell_channels
+            for channel_idx = plot_channels
                 objects = cell_segmentation_results_struct.detected_cell_props{well_idx,frame_idx,channel_idx};
 
                 cell_counts(channel_idx) = max([cell_counts(channel_idx), numel(objects)]);
             end
         end
         
-        if any(cell_counts(cell_channels) < plopts.min_cells)
+        if any(cell_counts(plot_channels) < plopts.min_cells)
             continue
         end
         
@@ -77,26 +77,28 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
         for frame_idx = 1:num_frames
             clf
             
-            for channel_idx = cell_channels
+            for channel_idx = plot_channels
 
                 objects = cell_segmentation_results_struct.detected_cell_props{well_idx,frame_idx,channel_idx};
     
-                subtightplot(numel(cell_channels),2,2*(channel_idx-cell_channels(1)) + 1)
+                subtightplot(numel(plot_channels),2,2*(channel_idx-plot_channels(1)) + 1)
                     hold all
 
                     draw_box(imadjust(mat2gray(cur_well_img(:,:,frame_idx,channel_idx)),[],[],gamma_adjust),0,...
-                        objects,well_idx,channel_idx,frame_idx)
-                        if channel_idx == 1
-                            title('Original image')
-                        end
+                        objects,well_idx,channel_idx,frame_idx,channel_idx-plot_channels(1)+1)
+                    
+                    if channel_idx-plot_channels(1) == 0
+                        title('Original image')
+                    end
                         
                     ylabel(channel_labels{channel_idx})
                     
-                subtightplot(numel(cell_channels),2,2*(channel_idx-cell_channels(1)) + 2)
+                subtightplot(numel(plot_channels),2,2*(channel_idx-plot_channels(1)) + 2)
 
                     draw_box(cell_masks_final{well_idx}(:,:,frame_idx,channel_idx),1,...
-                        objects,well_idx,channel_idx,frame_idx)
-                    if channel_idx == 1
+                        objects,well_idx,channel_idx,frame_idx,channel_idx-plot_channels(1)+1)
+                    
+                    if channel_idx-plot_channels(1) == 0
                         title('Final segmentation')
                     end
             end
@@ -125,14 +127,13 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
         end
     end
     
-    function draw_box(cur_slice,image_mode,objects,well_idx,channel_idx,frame_idx)
+    function draw_box(cur_slice,image_mode,objects,well_idx,channel_idx,frame_idx,channel_offset)
         % image mode
         % 0: image with lines highlighting segmentation
         % 1: segmentation regions with separate colors
         % 2: watershedding input
         
         if isempty(cur_slice)
-
             return
         end
         
@@ -177,7 +178,7 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
                                 'g','m','m'};
                 
                 plot(track(1,frame_idx),track(2,frame_idx),'x','MarkerSize',10,'LineWidth',3,'Color',marker_color{image_mode+1});
-                plot(track(1,first_draw_track_frame:frame_idx),track(2,first_draw_track_frame:frame_idx),'-','LineWidth',3,'Color',line_color{channel_idx,image_mode+1})
+                plot(track(1,first_draw_track_frame:frame_idx),track(2,first_draw_track_frame:frame_idx),'-','LineWidth',3,'Color',line_color{channel_offset,image_mode+1})
 
             end
         end
@@ -190,14 +191,14 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
         set(gca,'XTick',[])
         set(gca,'YTick',[])
 
-%         cw.plot.noise_box(is_noise_matrix(well_idx,channel_idx,frame_idx));
+        cw.plot.noise_box(is_noise_matrix(well_idx,channel_idx,frame_idx));
 
         dist = cell_masks_final{well_idx}(:,:,frame_idx,channel_idx);
         dist = dist(:);
-        if all(dist==0)
+        if 0%all(dist==0)
             colormap([0 0 0])
         else
-            colormap(cmaps{channel_idx})
+            colormap(cmaps{channel_offset})
         end
 
         freezeColors

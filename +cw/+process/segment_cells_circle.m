@@ -24,7 +24,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
     
     validation_images = cell(1,num_channels * num_wells);
     
-    for well_idx = 1:num_wells
+    for well_idx = 1:num_wells%9
         
         cur_well_im = mat2gray(well_tracking_results_struct.wells(well_idx).im_well);
         cur_well_im_thresh = zeros(size(cur_well_im,1),size(cur_well_im,2),num_frames,num_channels);
@@ -36,14 +36,14 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
 
         multiWaitbar('Current well...',0);
 
-        for frame_idx = 1:num_frames
+        for frame_idx = 1:num_frames%9
 
-            for channel_idx = options.cell_channels
+            for channel_idx = options.tracking_channels
                 
                 if signal_detection_results_struct.is_noise_matrix(well_idx,channel_idx,frame_idx)
                     im_thresh_final = zeros(size(cur_well_im,1),size(cur_well_im,2));
                 else
-                    im_thresh_final = zeros(size(cur_well_im,1),size(cur_well_im,2));
+%                     im_thresh_final = zeros(size(cur_well_im,1),size(cur_well_im,2));
                     
                     if frame_idx > 1 
                         levels_prev = cur_threshold_levels{frame_idx-1,channel_idx};
@@ -57,13 +57,11 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                     %%% detection work effectively
                     
                     im_contrast = imadjust(im_slice,[],[],0.50);
-                    im_expanded = imresize(im_contrast,2);
-                    im_expanded = convolveGaussian(im_expanded,1);
+                    im_expanded = imresize(im_contrast,2,'method','bicubic');
+                    im_expanded = convolveGaussian(im_expanded,2);
                     im_expanded = imsharpen(im_expanded);
 
                     %%% Hough circle detection
-                    
-                    [centers,radii] = imfindcircles(im_expanded,[5 20],'Sensitivity',0.8,'EdgeThreshold',0.1);
                     
                     [cur_threshold_levels{frame_idx,channel_idx}.level, cur_threshold_levels{frame_idx,channel_idx}.level_low, cur_threshold_levels{frame_idx,channel_idx}.level_high, ...
                         cur_thresh_xvals{frame_idx,channel_idx}, cur_thresh_yvals{frame_idx,channel_idx}] = ...
@@ -72,11 +70,34 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                     
                     im_thresh = threshold3D(im_expanded, cur_threshold_levels{frame_idx,channel_idx}.level);
                     
+                    % kill edge effect
+    
+                    im_thresh(1,:) = 0;
+                    im_thresh(end,:) = 0;
+                    im_thresh(:,1) = 0;
+                    im_thresh(:,end) = 0;
+                    
+                    % kill connections between objects
+    
+                    se = strel('disk',8);
+                    im_thresh = imopen(im_thresh,se);
+
+                    % Clear very small objects
+                    im_thresh = bwareaopen(im_thresh, 6);
+
+                    im_expanded_thresholded = im_expanded;
+                    im_expanded_thresholded(im_thresh(:) == 0) = 0;
+
+                    im_expanded_thresholded = reshape(im_expanded_thresholded,size(im_expanded));
+                    
+                    [centers,radii] = imfindcircles(im_expanded_thresholded,[5 20],'Sensitivity',0.85,'EdgeThreshold',0.05);
+                    
                     if propts.cseg_debug
                         figure(1372)
                         clf
                         
-                        imagesc(im_expanded)
+%                         imagesc(im_expanded)
+                        imagesc(im_expanded_thresholded)
                         
                         figure(1342)
                         clf
@@ -120,23 +141,8 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                                 xlim([min(xvals),max(xvals)])
                             end
                             
-                            
+%                             pause
                     end
-                    
-                    % kill edge effect
-    
-                    im_thresh(1,:) = 0;
-                    im_thresh(end,:) = 0;
-                    im_thresh(:,1) = 0;
-                    im_thresh(:,end) = 0;
-                    
-                    % kill tiny connections between objects
-    
-                    se = strel('disk',2);
-                    im_thresh = imopen(im_thresh,se);
-
-                    % Clear very small objects
-%                     im_thresh = bwareaopen(im_thresh, 100);
 
                     % now return thresh to its original size
                     
@@ -238,7 +244,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                                     ti(i_idcs(idx),j_idcs(idx)) = 0;
                                 end
 
-                                if propts.debug_seg
+                                if propts.cseg_debug
                                     figure(13542)
                                     clf
                                         hold all
@@ -254,7 +260,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
 
                                         colormap gray
 
-                                        pause
+%                                         pause
                                 end
 
                                 se = strel('disk',2);
@@ -369,7 +375,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                             subtightplot(2,3,3)
                                 hold all
 
-                                imagesc(im_expanded)
+                                imagesc(im_expanded_thresholded)
                                 viscircles(centers*2, radii*2,'EdgeColor','b');
 
                                 axis image
@@ -440,7 +446,9 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
 
                                 freezeColors
                         
-%                         pause
+                        suptitle(['Well: ' num2str(well_idx) ' Frame: ' num2str(frame_idx) ' Channel: ' num2str(channel_idx)])
+                                
+                        pause
                     end
                 end
 
