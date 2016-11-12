@@ -16,7 +16,7 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
     plot_channels = [options.cell_channels, options.nuclei_channel];
     
     draw_track_len = 15;
-    gamma_adjust = 0.4;
+    gamma_adjust = 0.1;
 
     cell_masks_final = cell_segmentation_results_struct.cell_masks;
     
@@ -84,7 +84,7 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
                 subtightplot(numel(plot_channels),2,2*(channel_idx-plot_channels(1)) + 1)
                     hold all
 
-                    draw_box(imadjust(mat2gray(cur_well_img(:,:,frame_idx,channel_idx)),[],[],gamma_adjust),0,...
+                    draw_box(mat2gray(imadjust(cur_well_img(:,:,frame_idx,channel_idx),[],[],gamma_adjust)),0,...
                         objects,well_idx,channel_idx,frame_idx,channel_idx-plot_channels(1)+1)
                     
                     if channel_idx-plot_channels(1) == 0
@@ -185,7 +185,6 @@ function cell_segmentation_and_tracking_circle(tracking_mode, wells, cell_segmen
 
         axis image
         set(gca,'Ydir','Reverse')
-%         axis off
         
         set(gca,'Color','white')
         set(gca,'XTick',[])

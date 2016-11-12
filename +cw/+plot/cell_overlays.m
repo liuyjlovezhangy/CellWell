@@ -25,7 +25,6 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
     
     num_wells = numel(wells);
     num_frames = size(wells(1).im_well,3);
-    num_channels = 2; %size(cell_segmentation_results_struct.detected_cell_props_final,3);
     
     figure(13425)
     clf
@@ -68,20 +67,21 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
             clf
 
                 well_scaled = squeeze(cur_well_im(:,:,frame_idx,1:3));
-                    % change channel brightnesses
-%                     well_scaled(:,:,1) = well_scaled(:,:,1) .* 0.5;
-%                     well_scaled(:,:,2) = well_scaled(:,:,2) .* 0.5;
-                well_scaled(:,:,1) = mat2gray(well_scaled(:,:,1));
-                well_scaled(:,:,2) = mat2gray(well_scaled(:,:,2));
-                well_scaled(:,:,3) = mat2gray(well_scaled(:,:,3));
+                % change channel brightnesses
+                
+                for channel_idx = 1:size(well_scaled,3)
+                    well_scaled(:,:,channel_idx) = mat2gray(well_scaled(:,:,channel_idx));
+                end
+                
+                well_scaled(:,:,options.signal_channels) = 0;
 
                 subtightplot(1,2,1)
                     hold all
-                    draw_box(well_scaled,0,objects,well_idx,2,frame_idx)
+                    draw_box(well_scaled,0,objects,well_idx,frame_idx)
                     
                 subtightplot(1,2,2)
                     hold all
-                    draw_box(squeeze(cell_masks_final{well_idx}(:,:,frame_idx,:)),1,objects,well_idx,2,frame_idx)
+                    draw_box(squeeze(cell_masks_final{well_idx}(:,:,frame_idx,:)),1,objects,well_idx,frame_idx)
                     
             suptitle(['Multi-channel overlay. Well: ' num2str(well_idx) ' frame: ' num2str(frame_idx)])
 
@@ -94,6 +94,8 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
 %             fig.PaperPositionMode = 'auto';
             
             drawnow
+            
+            pause
 
             if make_movies
                 F=getframe(gcf);
@@ -107,7 +109,7 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
         close(writerObj);
     end
     
-    function draw_box(cur_slice,image_mode,objects,well_idx,num_channels,frame_idx)
+    function draw_box(cur_slice,image_mode,objects,well_idx,frame_idx)
         % image mode
         % 0: image with lines highlighting segmentation
         % 1: segmentation regions with separate colors
@@ -122,7 +124,8 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
         ylim([1, size(cur_slice,1)])
         
         if image_mode == 1
-            cmap = [0 0 0;1,0,0;0,1,0;0,0,1;1,0,1];
+%             cmap = [0 0 0;1,0,0;0,1,0;0,0,1;1,0,1];
+            cmap = [0 0 0;0,1,0;0,0,1;1,0,1];
             
             combined_layers = zeros(size(cur_slice,1),size(cur_slice,2),size(cur_slice,3));
             combined_layers(:,:,1) = 1;
@@ -150,7 +153,7 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
             imshow(rgb)
 
         else
-            imagesc(cur_slice)
+            imagesc(cur_slice(:,:,[options.signal_channels,options.cell_channels]))
         end
 
         if image_mode == 0
@@ -162,7 +165,7 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
             end
         end
         
-        for channel_box_idx = 1:num_channels
+        for channel_box_idx = options.cell_channels
             cell_tracks = cell_tracking_results_struct.cell_tracks{well_idx,channel_box_idx};
 
             for track_idx = 1:numel(cell_tracks)

@@ -21,7 +21,7 @@ function [trajectories,obj_ids] = simple_tracking( molarray, link_params )
 %       where either one point could connect to two candidates in the next
 %       frame or two points could connect to the same candidate
 
-    numframes = max(molarray(:,3));
+    num_frames = max(molarray(:,3));
     
     if link_params.gap_close
         gap_close_r = 2*link_params.searchrad;
@@ -46,7 +46,7 @@ function [trajectories,obj_ids] = simple_tracking( molarray, link_params )
         molarray(mol_ind, 5) = track_ind_pre ;
         track_num = track_num + new_track_n ; % update track index counter              
          
-        for frame = 2:numframes
+        for frame = 2:num_frames
             % define variable for x,y of all molecules in the currect frame 
             mol_ind = molarray(:,3) == frame ;
             mol_cur = molarray(mol_ind,[1 2]);
@@ -85,7 +85,7 @@ function [trajectories,obj_ids] = simple_tracking( molarray, link_params )
             mol_pre = mol_cur ;
             track_ind_pre = track_ind_cur ;
             molarray(mol_ind, 5) = track_ind_cur ;
-%             waitbar(frame/numframes)
+%             waitbar(frame/num_frames)
         end
 %         close(h);
 %         drawnow
@@ -114,7 +114,7 @@ function [trajectories,obj_ids] = simple_tracking( molarray, link_params )
             tlen = size(connected_track,2);
             
             if ~isfield(link_params,'total_num_frames')
-                total_num_frames = numframes;
+                total_num_frames = num_frames;
             else
                 total_num_frames = link_params.total_num_frames;
             end

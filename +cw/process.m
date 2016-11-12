@@ -192,12 +192,12 @@ function process(options)
         elseif strcmp(propts.cseg_mode,'circle')
             [cell_segmentation_results_struct,~] = cw.process.segment_cells_circle( well_tracking_results_struct, ...
                 signal_detection_results_struct, options );
-            
-            if options.nuclei_channel
-                cell_segmentation_results_struct = cw.process.segment_cells_circle_nuclei_cleanup(well_tracking_results_struct, cell_segmentation_results_struct, options);
-            end
         else
             error('Unknown cell segmentation mode.')
+        end
+        
+        if options.nuclei_channel
+            cell_segmentation_results_struct = cw.process.segment_cells_nuclei_assignment(well_tracking_results_struct, cell_segmentation_results_struct, options);
         end
         
         disp('Saving cell segmentation results....')

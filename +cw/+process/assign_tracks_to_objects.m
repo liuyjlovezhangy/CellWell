@@ -1,6 +1,31 @@
 function linked_object_cell = assign_tracks_to_objects( tracks, object_ids, objects_cell )
+    % linked_object_cell: structure 1 x num unique cells in well over time
+    %   start_frame
+    %   end_frame
+    %   regionprops (1 x end_frame - start_frame + 1)
+    %   track
+
     num_tracks = size(object_ids,1);
     num_frames = size(object_ids,2);
+    num_cells = num_tracks;
+    
+    object_ids
+    
+    linked_object_cell = [];
+    
+    for cell_idx = 1:num_cells
+        cur_object_ids = object_idcs(cell_idx,:);
+        
+        linked_object_cell(cell_idx).start_frame = find(~isnan(cur_object_ids),1,'first');
+        linked_object_cell(cell_idx).end_frame = find(~isnan(cur_object_ids),1,'last');
+        linked_object_cell(cell_idx).cur_track = tracks{cell_idx};
+        
+        
+    end
+    
+    
+    
+    return
     
     error('im not done yet.')
     
