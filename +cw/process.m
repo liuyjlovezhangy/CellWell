@@ -225,9 +225,28 @@ function process(options)
         save([full_filename '__analysis_results/cell_tracking.mat'],'cell_tracking_results_struct')
 
     else
-%         disp('Loading previous cell tracking...')
+        disp('Loading previous cell tracking...')
         
-%         cell_tracking_results_struct = importdata([full_filename '__analysis_results/cell_tracking.mat']);
+        cell_tracking_results_struct = importdata([full_filename '__analysis_results/cell_tracking.mat']);
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Interaction detection
+    
+    if propts.start_at <= 6 || ~exist([full_filename '__analysis_results/cell_interactions.mat'],'file')
+        
+        disp('Detecting cell interactions in each well...')
+        
+        cell_interaction_results_struct = cw.process.detect_interactions( cell_tracking_results_struct, options );
+        
+        disp('Saving cell interaction detection results....')
+        
+        save([full_filename '__analysis_results/cell_interactions.mat'],'cell_interaction_results_struct')
+
+    else
+%         disp('Loading previous cell tracking...')
+%         
+%         cell_interaction_results_struct = importdata([full_filename '__analysis_results/cell_interactions.mat']);
     end
 end
 

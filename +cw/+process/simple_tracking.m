@@ -46,9 +46,9 @@ function [trajectories,obj_ids] = simple_tracking( molarray, link_params )
         molarray(mol_ind, 5) = track_ind_pre ;
         track_num = track_num + new_track_n ; % update track index counter              
          
-        for frame = 2:num_frames
+        for frame_idx = 2:num_frames
             % define variable for x,y of all molecules in the currect frame 
-            mol_ind = molarray(:,3) == frame ;
+            mol_ind = molarray(:,3) == frame_idx ;
             mol_cur = molarray(mol_ind,[1 2]);
             track_ind_cur = zeros(size(mol_cur,1),1) ; % track indices of molecules in the current frame
             for j = 1: size(mol_pre,1)

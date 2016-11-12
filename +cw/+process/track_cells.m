@@ -37,18 +37,18 @@ function cell_tracking_results_struct = track_cells( cell_segmentation_results_s
             end
 
             if ~isempty(localization_array)
-                % link the cell positions frame-to-frame
+                %%% link the cell positions frame-to-frame
 
                 [cell_tracks,cell_ids] = cw.process.simple_tracking(localization_array, link_params );
 
+                %%% match the regionprops objects with their tracks
+                
                 linked_object_cell = cw.process.assign_tracks_to_objects( cell_tracks, cell_ids, objects_cell );
                 
                 cell_tracking_results_struct.cell_tracks{well_idx,channel_idx} = cell_tracks;
                 cell_tracking_results_struct.linked_object_cells{well_idx,channel_idx} = linked_object_cell;
             end
         end
-
-        % build a list of interacting cells
         
     end
     
