@@ -91,7 +91,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                     
                     [centers,radii] = imfindcircles(im_expanded_thresholded,[5 20],'Sensitivity',0.85,'EdgeThreshold',0.05);
                     
-                    [centers,radii]=RemoveOverLap(centers,radii,10,4);
+                    [centers,radii] = RemoveOverLap(centers,radii,10,4);
                     
                     if propts.cseg_debug
                         figure(1372)
@@ -293,7 +293,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                     end
                     
                     im_thresh_final = bwlabeln(im_thresh_final,4);
-                    objects_final = regionprops(im_thresh_final,'ConvexHull','Centroid','FilledImage','Extrema','Area');
+                    objects_final = regionprops(im_thresh_final,'ConvexHull','Centroid','FilledImage','BoundingBox','Extrema','Area');
                     
                     % clean up objects that do not meet minimum
                     % requirements
