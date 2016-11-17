@@ -24,7 +24,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
     
     validation_images = cell(1,num_channels * num_wells);
     
-    for well_idx = 1:num_wells%8
+    for well_idx = 1:num_wells
         
         cur_well_im = mat2gray(well_tracking_results_struct.wells(well_idx).im_well);
         cur_well_im_thresh = zeros(size(cur_well_im,1),size(cur_well_im,2),num_frames,num_channels);
@@ -38,7 +38,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
 
         for frame_idx = 1:num_frames
 
-            for channel_idx = options.tracking_channels
+            for channel_idx = options.nuclei_channel%options.tracking_channels
                 
                 if signal_detection_results_struct.is_noise_matrix(well_idx,channel_idx,frame_idx)
                     im_thresh_final = zeros(size(cur_well_im,1),size(cur_well_im,2));
@@ -57,15 +57,16 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                     
                     im_contrast = imadjust(im_slice,[],[],0.50);
                     im_expanded = imresize(im_contrast,2,'method','bicubic');
-                    im_expanded = convolveGaussian(im_expanded,3.5);
-                    im_expanded = imsharpen(im_expanded);
-
-                    %%% Hough circle detection
                     
                     [cur_threshold_levels{frame_idx,channel_idx}.level, cur_threshold_levels{frame_idx,channel_idx}.level_low, cur_threshold_levels{frame_idx,channel_idx}.level_high, ...
                         cur_thresh_xvals{frame_idx,channel_idx}, cur_thresh_yvals{frame_idx,channel_idx}] = ...
                         cw.process.adaptiveThresholdFinder(im_expanded, propts.cseg_adaptive_thresh_scale,...
                         propts.cseg_tracking_params, levels_prev);
+                    
+                    im_expanded = convolveGaussian(im_expanded,3.5);
+                    im_expanded = imsharpen(im_expanded);
+
+                    %%% Hough circle detection
                     
                     im_thresh = threshold3D(im_expanded, cur_threshold_levels{frame_idx,channel_idx}.level);
                     
@@ -94,54 +95,53 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
                     [centers,radii] = RemoveOverLap(centers,radii,10,4);
                     
                     if propts.cseg_debug
-                        figure(1372)
-                        clf
-                        
-%                         imagesc(im_expanded)
-                        imagesc(im_expanded_thresholded)
-                        
-                        figure(1342)
-                        clf
-                        
-                        imagesc(im_thresh)
                         
                         figure(123523)
                         clf
-                        
-                            hold all
+                            subplot(1,2,1)
+                                hold all
 
-                            xvals = cur_thresh_xvals{frame_idx,channel_idx};
-                            yvals = cur_thresh_yvals{frame_idx,channel_idx};
+                                xvals = cur_thresh_xvals{frame_idx,channel_idx};
+                                yvals = cur_thresh_yvals{frame_idx,channel_idx};
 
-                            xvals(yvals <= 0) = [];
-                            yvals(yvals <= 0) = [];
+                                xvals(yvals <= 0) = [];
+                                yvals(yvals <= 0) = [];
 
-                            plot(xvals,yvals,'-k.','LineWidth',3,'MarkerSize',25)
+                                plot(xvals,yvals,'-k.','LineWidth',3,'MarkerSize',25)
 
-                            set(gca,'yscale','log')
-                            set(gca,'xscale','log')
+                                set(gca,'yscale','log')
+                                set(gca,'xscale','log')
 
-                            if ~isempty(cur_threshold_levels{frame_idx,channel_idx}.level)
-                                line([cur_threshold_levels{frame_idx,channel_idx}.level cur_threshold_levels{frame_idx,channel_idx}.level],ylim,'LineStyle','--','Color','k','LineWidth',3)
-                            end
+                                if ~isempty(cur_threshold_levels{frame_idx,channel_idx}.level)
+                                    line([cur_threshold_levels{frame_idx,channel_idx}.level cur_threshold_levels{frame_idx,channel_idx}.level],ylim,'LineStyle','--','Color','k','LineWidth',3)
+                                end
 
-                            xlabel('Normalized pixel intensity')
-                            ylabel('Average object area (px)')
+                                xlabel('Normalized pixel intensity')
+                                ylabel('Average object area (px)')
 
-                            if channel_idx == 1
-                                title('Adaptive thresholding')
-                            end
+                                if channel_idx == 1
+                                    title('Adaptive thresholding')
+                                end
 
-                            pos = get(gca,'OuterPosition');
-                            set(gca,'OuterPosition',[pos(1), pos(2) + 0.01, pos(3), pos(4)])
+                                pos = get(gca,'OuterPosition');
+                                set(gca,'OuterPosition',[pos(1), pos(2) + 0.01, pos(3), pos(4)])
 
-                            box on
-                            grid on
+                                box on
+                                grid on
 
-                            if ~isempty(xvals)
-                                xlim([min(xvals),max(xvals)])
-                            end
+                                if ~isempty(xvals)
+                                    xlim([min(xvals),max(xvals)])
+                                end
                             
+                            subplot(1,2,2)
+                                hold all
+                                imagesc(im_thresh)
+                                
+                                axis image
+                                set(gca,'Ydir','Reverse')
+                                axis off 
+
+                                colormap gray
 %                             pause
                     end
 
@@ -499,4 +499,6 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ci
     
     multiWaitbar('CloseAll');
     drawnow
+    
+%     error
 end

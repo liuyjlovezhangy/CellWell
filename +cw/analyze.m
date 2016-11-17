@@ -10,35 +10,101 @@ function analyze(options)
     im = importdata([full_filename '__analysis_results/input_movie.mat']);
     im = mat4D_to_gray(im);
     
-    well_segmentation_results_struct = [];
-    well_tracking_results_struct = [];
-    signal_detection_results_struct = [];
-    cell_segmentation_results_struct = [];
-    cell_tracking_results_struct = [];
+    well_segmentation_results_struct = importdata([full_filename '__analysis_results/well_segmentation.mat']);
+    well_tracking_results_struct = cw.process.track_wells( im, well_segmentation_results_struct, options );
+    signal_detection_results_struct = importdata([full_filename '__analysis_results/noise_detection.mat']);
+    cell_segmentation_results_struct = importdata([full_filename '__analysis_results/cell_segmentation.mat']);
+    cell_tracking_results_struct = importdata([full_filename '__analysis_results/cell_tracking.mat']);
+    cell_interaction_results_struct = importdata([full_filename '__analysis_results/cell_interactions.mat']);
     
-    disp('Loading data...')
+    interaction_results(cell_interaction_results_struct,options);
     
-%     if isempty(well_segmentation_results_struct)
-%         well_segmentation_results_struct = importdata([full_filename '__analysis_results/well_segmentation.mat']);
-%     end
-%         
-%     if isempty(well_tracking_results_struct)
-%        well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
-%     end
-%     
-%     if isempty(signal_detection_results_struct)
-%        signal_detection_results_struct = importdata([full_filename '__analysis_results/noise_detection.mat']);
-%     end
-%     
-%     if isempty(cell_segmentation_results_struct)
-%        cell_segmentation_results_struct = importdata([full_filename '__analysis_results/cell_segmentation.mat']);
-%     end
+%     cell_location_distributions(cell_tracking_results_struct,options);
+end
+
+function interaction_results(cell_interaction_results_struct,options)
+    num_wells = numel(cell_interaction_results_struct.interactions);
     
-    if isempty(cell_tracking_results_struct)
-       cell_tracking_results_struct = importdata([full_filename '__analysis_results/cell_tracking.mat']);
+    warning('interaction_results: hack where it assumes 2 cell channels')
+    
+    unique_interaction_counts = zeros(num_wells, 3);
+    
+    % wells where there are no <x> cells should not contribute to histogram
+    
+    
+    
+    for well_idx = 1:num_wells
+        well_interactions = cell_interaction_results_struct.interactions{well_idx};
+        
+        for interaction_idx = 1:numel(well_interactions)
+            int = well_interactions(interaction_idx);
+            
+            % how many unique interactions for these two cells
+            
+            changes = int.interacting_flag(2:end) - int.interacting_flag(1:end-1);
+            UIC = sum(changes == -1) + 1;
+            
+            channel_offset = options.cell_channels(1) - 1;
+            
+            if int.channel1 == int.channel2
+                UIC_col = int.channel1 - channel_offset;
+            else
+                UIC_col = 3;
+            end
+            
+            unique_interaction_counts(well_idx, UIC_col) = unique_interaction_counts(well_idx, UIC_col) + UIC;
+            
+            % how long did each interaction last?
+            
+            
+        end
+
     end
     
-    cell_location_distributions(cell_tracking_results_struct,options);
+    UIC_1_hist_loc = 0:max(unique_interaction_counts(:,1))+1;
+    UIC_2_hist_loc = 0:max(unique_interaction_counts(:,2))+1;
+    UIC_combo_hist_loc = 0:max(unique_interaction_counts(:,3))+1;
+
+    UIC_1_hist = histc(unique_interaction_counts(:,1),UIC_1_hist_loc);
+    UIC_2_hist = histc(unique_interaction_counts(:,2),UIC_2_hist_loc);
+    UIC_combo_hist = histc(unique_interaction_counts(:,3),UIC_combo_hist_loc);
+    
+    figure(134287)
+    clf
+        subplot(1,3,1)
+            hold all
+
+            plot(UIC_1_hist_loc,UIC_1_hist,'.-','Color','r','LineWidth',3,'MarkerSize',40)
+            plot(UIC_2_hist_loc,UIC_2_hist,'.-','Color','g','LineWidth',3,'MarkerSize',40)
+            plot(UIC_combo_hist_loc,UIC_combo_hist,'.-','Color','b','LineWidth',3,'MarkerSize',40)
+
+            xlabel('Number of unique interactions')
+            ylabel('# wells')
+            title('Number of unique cell-cell interactions found per well')
+
+            box on
+            grid on
+            
+        subplot(1,3,3)
+            hold all
+            
+            plot(-1,-1,'.-','Color','r','LineWidth',3,'MarkerSize',40)
+            plot(-1,-1,'.-','Color','g','LineWidth',3,'MarkerSize',40)
+            plot(-1,-1,'.-','Color','b','LineWidth',3,'MarkerSize',40)
+            
+            xlim([0 1])
+            ylim([0 1])
+            axis off
+            
+            comb_string = [options.channel_labels{options.cell_channels(1)} ' <-> ' options.channel_labels{options.cell_channels(2)} ' interaction'];
+            
+            legend([options.channel_labels(options.cell_channels), {comb_string}])
+        
+%     suptitle('Cell-cell interaction statistics')
+            
+    set(findall(gcf,'type','text'),'fontSize',16,'fontWeight','bold')
+    set(findall(gcf,'type','axes'),'fontSize',16,'fontWeight','bold','LineWidth',5)
+    set(gcf, 'color', 'white')
 end
 
 function cell_location_distributions(cell_tracking_results_struct,options)

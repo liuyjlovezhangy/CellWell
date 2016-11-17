@@ -1,4 +1,4 @@
-function do_noise_box(is_noise)
+function noise_box(is_noise)
     xl = xlim;
     yl = ylim;
         

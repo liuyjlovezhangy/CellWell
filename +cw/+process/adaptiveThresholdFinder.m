@@ -1,5 +1,7 @@
 function [level, level_low, level_high, xvals, yvals] = adaptiveThresholdFinder(Istack3d, scale, tracking_params, levels_prev)
 
+smooth_vols = 5;
+
 %%%% Parameters %%%%
 threshold_density = tracking_params.threshold_density; %density of threshold values to try (on log scale) when generating mean/median volume curves
 % start = round(10*prctile(log(Istack3d(:)),90))/10; %assumes that objects take up less than 10% of total pixels
@@ -8,13 +10,15 @@ threshold_density = tracking_params.threshold_density; %density of threshold val
 % end
 start = min(log(Istack3d(Istack3d>0)));
 
-vols_mean = [];
+levels = start:threshold_density:-0.1;
 
-for level=start:threshold_density:-0.1
-    Ithresh = threshold3D(Istack3d,10^level);
+vols_mean = zeros(1,numel(levels));
+
+for level_idx = 1:numel(levels)
+    Ithresh = threshold3D(Istack3d,10^levels(level_idx));
     L=bwlabeln(Ithresh);
     STATS = regionprops(L,Ithresh,'Area');
-    vols_mean = [vols_mean, mean([STATS.Area])];
+    vols_mean(level_idx) = mean([STATS.Area]);
 end
     
 
@@ -23,8 +27,8 @@ end
 % sm = movingmean(vols_mean',3,[],[],1);
 % sm2deriv = movingmean(diff(diff(sm)),3,[],[],1);
 
-sm = smooth(vols_mean,3);
-sm2deriv = smooth(diff(diff(sm)),3);
+sm = smooth(vols_mean,smooth_vols);
+sm2deriv = smooth(diff(diff(sm)),smooth_vols);
 
 max2deriv = max(sm2deriv(1:end-2));
 if max2deriv > 0, minidx2deriv = find(sm2deriv>max2deriv/3,1); %find beginning of first significant peak in second derivative (i.e. first end of a negative slope)
@@ -106,7 +110,7 @@ end
 
 xvals = 10.^[start:threshold_density:-0.1];
 % yvals = movingmean(vols_mean',3,[],[],1);
-yvals = smooth(vols_mean,3);
+yvals = smooth(vols_mean,smooth_vols);
 
 %hold on
 

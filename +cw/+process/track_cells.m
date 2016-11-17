@@ -10,6 +10,7 @@ function cell_tracking_results_struct = track_cells( cell_segmentation_results_s
     
     cell_tracking_results_struct = [];
     cell_tracking_results_struct.cell_tracks = cell(num_wells,num_channels);
+    cell_tracking_results_struct.cell_ids = cell(num_wells,num_channels);
     cell_tracking_results_struct.linked_object_cells = cell(num_wells,num_channels);
 
     link_params.mode = propts.ctrk_mode;
@@ -47,6 +48,7 @@ function cell_tracking_results_struct = track_cells( cell_segmentation_results_s
                 
                 cell_tracking_results_struct.cell_tracks{well_idx,channel_idx} = cell_tracks;
                 cell_tracking_results_struct.linked_object_cells{well_idx,channel_idx} = linked_object_cell;
+                cell_tracking_results_struct.cell_ids{well_idx,channel_idx} = cell_ids;
             end
         end
         

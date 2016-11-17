@@ -4,11 +4,11 @@ function linked_object_cell = assign_tracks_to_objects( tracks, object_ids, obje
     %   end_frame
     %   cell_props (1 x end_frame - start_frame + 1)
     %   track
-
-    warning('assign_tracks_to_objects: linked_object_cell addition needs to be vectorized.')
     
     num_tracks = size(object_ids,1);
     num_cells = num_tracks;
+    
+    linked_object_cell = repmat(struct('start_frame',[],'end_frame',[],'track',[],'cell_props',[]),[1 num_cells]);
     
     for cell_idx = 1:num_cells
         cur_object_ids = object_ids(cell_idx,:);

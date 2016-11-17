@@ -1,4 +1,7 @@
 function cell_segmentation_results_struct_out = segment_cells_nuclei_assignment( well_tracking_results_struct, cell_segmentation_results_struct, options )
+    
+%     warning('segment_cells_nuclei_assignment: need a better metric to detect signal over background...')
+
     propts = options.processing_options;
     
     num_wells = numel(well_tracking_results_struct.wells);
@@ -39,7 +42,7 @@ function cell_segmentation_results_struct_out = segment_cells_nuclei_assignment(
                 cell_channel_p_values = [];
                 
                 for cell_channel_idx = options.cell_channels
-                    channel_slice = cur_slice(:,:,cell_channel_idx);
+                    channel_slice = wiener2(cur_slice(:,:,cell_channel_idx));
                     
                     % get the bitmap image of this cell channel after overlaying the nucleus mask
                     
@@ -65,15 +68,20 @@ function cell_segmentation_results_struct_out = segment_cells_nuclei_assignment(
                 CV = std(cell_channel_p_values)/mean(cell_channel_p_values);
                 
                 % this is to account for when the background is really bad in both channels and we might as well discard
-                % CV appears to hover around 1.4 when P-values are highly distinuishable and there is real signal
+                % CV appears to hover around sqrt(2) when P-values are highly distinuishable and there is real signal
+                % This metric basically looks for whether one channel has significantly better signal over another
                 
-                if CV > 1.2 
-                    [~,cell_channel_assignment] = min(cell_channel_p_values);
-                    cell_channel_assignment = cell_channel_assignment + options.cell_channels(1) - 1;
+                if CV > 1.41 
+                    [min_val,cell_channel_assignment] = min(cell_channel_p_values);
+                    
+                    if min_val < 1e-20 % arbitrary threshold to catch everything else
+                    
+                        cell_channel_assignment = cell_channel_assignment + options.cell_channels(1) - 1;
 
-                    assigned_cell_mask = cell_masks(:,:,frame_idx,cell_channel_assignment);
-                    assigned_cell_mask(start_i:end_i,start_j:end_j) = nucleus_image;
-                    cell_masks(:,:,frame_idx,cell_channel_assignment) = assigned_cell_mask;
+                        assigned_cell_mask = cell_masks(:,:,frame_idx,cell_channel_assignment);
+                        assigned_cell_mask(start_i:end_i,start_j:end_j) = nucleus_image;
+                        cell_masks(:,:,frame_idx,cell_channel_assignment) = assigned_cell_mask;
+                    end
                 end
             end
             

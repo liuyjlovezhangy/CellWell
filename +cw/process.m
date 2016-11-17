@@ -237,7 +237,7 @@ function process(options)
         
         disp('Detecting cell interactions in each well...')
         
-        cell_interaction_results_struct = cw.process.detect_interactions( cell_tracking_results_struct, options );
+        cell_interaction_results_struct = cw.process.detect_interactions( well_tracking_results_struct, cell_segmentation_results_struct, cell_tracking_results_struct, options );
         
         disp('Saving cell interaction detection results....')
         
