@@ -1,5 +1,5 @@
 function cell_interaction_results_struct = detect_interactions( well_tracking_results_struct, cell_segmentation_results_struct, cell_tracking_results_struct, options )
-    cell_radius = 7; % pixels
+    cell_radius = 1000; % pixels
     max_dist = 2 * cell_radius + options.interaction_tolerance;
     
     warning('detect_interactions: cell radius should be detected for individual cells based on mask. this is currently a hack')

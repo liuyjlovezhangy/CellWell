@@ -10,6 +10,8 @@ function analyze(options)
     im = importdata([full_filename '__analysis_results/input_movie.mat']);
     im = mat4D_to_gray(im);
     
+    disp matfiles
+    
     well_segmentation_results_struct = importdata([full_filename '__analysis_results/well_segmentation.mat']);
     well_tracking_results_struct = cw.process.track_wells( im, well_segmentation_results_struct, options );
     signal_detection_results_struct = importdata([full_filename '__analysis_results/noise_detection.mat']);
@@ -17,21 +19,297 @@ function analyze(options)
     cell_tracking_results_struct = importdata([full_filename '__analysis_results/cell_tracking.mat']);
     cell_interaction_results_struct = importdata([full_filename '__analysis_results/cell_interactions.mat']);
     
-    interaction_results(cell_interaction_results_struct,options);
+    disp done
+    
+    track_cdfs( cell_tracking_results_struct,options );
+    
+%     interaction_results(cell_tracking_results_struct, cell_interaction_results_struct,options);
     
 %     cell_location_distributions(cell_tracking_results_struct,options);
 end
 
-function interaction_results(cell_interaction_results_struct,options)
+function track_cdfs( cell_tracking_results_struct,options )
+
+    delta_t = options.time_step;
+    umperpx = options.pixel_size;
+
+    num_iterations = 50;
+    max_states = 2;
+    
+    ct = cell_tracking_results_struct.cell_tracks;
+    
+    for channel_idx = options.cell_channels
+    
+        tracks = {};
+
+        for well_idx = 1:size(ct,1)
+            tracks = [tracks, ct{well_idx,2}];
+        end
+
+        %%%%%%%%%%%%%%%%%%
+
+        D_cell = cell(1,max_states);
+        weight_cell = cell(1,max_states);
+
+        steps_cell = {};
+        all_delta_rs = [];
+
+        for track_idx = 1:numel(tracks)
+            track = tracks{track_idx};
+
+            steps = track(:,2:end) - track(:,1:end-1);
+            steps_cell = [steps_cell, steps];
+
+            delta_rs = sqrt( steps(1,:) .^ 2 + steps(2,:) .^2 );
+
+            delta_rs = delta_rs(~isnan(delta_rs));
+
+            all_delta_rs = [all_delta_rs, delta_rs];
+        end
+
+        all_delta_rs = all_delta_rs * umperpx;
+
+        [data_cdf,x_locations] = ecdf(all_delta_rs);
+
+        %%%%
+
+        steps_matrix = cell2mat(steps_cell);
+
+        mu_max = max(steps_matrix,[],2); 
+        mu_min = min(steps_matrix,[],2); 
+        sigma_max = max(mu_max-mu_min);
+        
+    end
+    
+    return
+        
+        figure(83278)
+        clf
+        
+        figure(1423)
+        clf
+        
+        figure(5131)
+        clf
+        
+%         save_dir = [master_cfg_path '/HMM_graphs/' group_name];
+        
+        for num_states = 1:max_states
+
+            beta0 = [ones(1,num_states) / num_states, sigma_max*ones(1,num_states)];
+
+            problem = createOptimProblem('lsqcurvefit','x0',beta0,'objective',@(b,x) modelfun(b,x,delta_t),...
+            'lb',zeros(1,num_states*2),'ub',[ones(1,num_states),sigma_max*ones(1,num_states)],'xdata',x_locations,'ydata',data_cdf);
+
+            ms = MultiStart('PlotFcns',@gsplotbestf);
+            [beta,errormulti] = run(ms,problem,num_iterations);
+
+            num_D = numel(beta) / 2;
+
+            weights = beta(1:num_D);
+            weights = weights / sum(weights)
+            Ds = beta(num_D+1:end)
+
+            [Dsort, Is] = sort(Ds,'descend');
+            
+            D_cell{1,num_states} = Dsort;
+            weight_cell{1,num_states} = weights(Is);
+            
+            %%%%
+
+            figure(1423)
+
+            subplot(2,max_states,num_states)
+            hold all
+
+            plot(x_locations,data_cdf,'--','LineWidth',2)
+            plot(x_locations,modelfun(beta,x_locations,delta_t),'LineWidth',2)
+
+            set(gca,'xscale','log')
+
+            xlabel('Displacement (\mum)')
+            ylabel('P(r,\Deltat)')
+            title(['CDF for ' num2str(num_states) ' states'])
+
+            subplot(2,max_states,max_states+num_states)
+
+            residuals = data_cdf-modelfun(beta,x_locations,delta_t);
+
+            plot(x_locations,residuals)
+            xlabel('Displacement (\mum)')
+            ylabel('Residuals')
+    %         title('Residuals')
+
+            set(gca,'xscale','log')
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            figure(83278)
+            hold all
+
+            if num_states == 1 || num_states == 2
+                plot(x_locations,modelfun(beta,x_locations,delta_t),'LineWidth',2)
+
+                set(gca,'xscale','log')
+
+                xlabel('Displacement (\mum)')
+                ylabel('P(r,\Deltat)')
+%                 title(['CDF for ' num2str(num_states) ' states'])
+            end
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            figure(5131)
+            
+            subplot(2,max_states,num_states)
+        
+            bar(Dsort)
+            set(gca,'yscale','log')
+            
+            title(['D coeffs for ' num2str(num_states) ' states'])
+            ylabel('Diff coeff (\mum^2/s)')
+            
+            subplot(2,max_states,max_states+num_states)
+            
+            bar(weights(Is))
+            
+            title(['Weights ' num2str(num_states) ' states'])
+            ylabel('Weight (%)')
+            
+            if num_states == 1
+                
+%                 dlmcell([save_dir '/2state_cdf_fxn.csv'],{x_locations', data_cdf', modelfun(beta,x_locations,delta_t)', residuals'},'delimiter',',');
+%                 dlmwrite([save_dir '/1state_cdf_fxn.csv'],[x_locations, data_cdf, modelfun(beta,x_locations,delta_t), residuals],'delimiter',',');
+                
+            end
+            
+            if num_states == 2
+                
+%                 dlmcell([save_dir '/2state_cdf_fxn.csv'],{x_locations', data_cdf', modelfun(beta,x_locations,delta_t)', residuals'},'delimiter',',');
+%                 dlmwrite([save_dir '/2state_cdf_fxn.csv'],[x_locations, data_cdf, modelfun(beta,x_locations,delta_t), residuals],'delimiter',',');
+            end
+        end
+        
+        figure(1423)
+        set(findall(gcf,'type','text'),'fontSize',20,'fontWeight','bold')
+        set(findall(gcf,'type','axes'),'fontSize',20,'fontWeight','bold')
+%         saveas(gcf,[save_dir '/cdf_fitting.png']);
+        
+        figure(5131)
+        set(findall(gcf,'type','text'),'fontSize',14,'fontWeight','bold')
+        set(findall(gcf,'type','axes'),'fontSize',14,'fontWeight','bold')        
+%         saveas(gcf,[save_dir '/cdf_diffcoeffs.png']);
+        
+
+    
+    %%%% Compare
+    figure(19824)
+    clf
+        
+    for num_states = 1:max_states
+        
+        subplot(2,max_states,num_states)
+        
+        % Compile conditions
+        
+        Ds = [];
+        weights = [];
+        
+        for condition_idx = 1:size(D_cell,1)
+            Ds = [Ds D_cell{condition_idx,num_states}'];
+            weights = [weights weight_cell{condition_idx,num_states}'];
+        end
+        
+        Ds
+        weights
+        
+        bar(Ds)
+        set(gca,'yscale','log')
+
+        title(['D coeffs for ' num2str(num_states) ' states'])
+        ylabel('Diff coeff (\mum^2/s)')
+
+        subplot(2,max_states,max_states+num_states)
+
+        bar(weights)
+
+        title(['Weights ' num2str(num_states) ' states'])
+        ylabel('Weight (%)')
+        
+        if num_states == 2
+%             dlmcell([master_cfg_path '/HMM_comparison/comparison_2state.csv'],{Ds, weights},'delimiter',',');
+%             dlmwrite([master_cfg_path '/HMM_comparison/comparison_2state.csv'],[Ds, weights],'delimiter',',');
+        end
+        
+    end
+    
+    figure(83278)
+%     legend('mero_1state','mero_2state','hap_1state','hap_2state')
+    
+    set(findall(gcf,'type','text'),'fontSize',14,'fontWeight','bold')
+    set(findall(gcf,'type','axes'),'fontSize',14,'fontWeight','bold')        
+%     saveas(gcf,[master_cfg_path '/HMM_comparison/cdf_comparison.png']);
+end
+
+function y = modelfun(b,x,delta_t)
+    %%% Coefficients
+    % weights followed by diffusion coefficients
+
+    num_D = numel(b) / 2;
+    
+    weights = b(1:num_D);
+    weights = weights / sum(weights);
+    Ds = b(num_D+1:end);
+    
+    exponentials = zeros(numel(x),num_D);
+    
+    for D_idx = 1:num_D
+        
+        exponentials(:,D_idx) = weights(D_idx) .* exp(-x.^2 ./ (4*Ds(D_idx)*delta_t));
+    end
+    
+    y = 1 - sum(exponentials,2);
+
+end
+
+
+
+
+function interaction_results(cell_tracking_results_struct, cell_interaction_results_struct,options)
     num_wells = numel(cell_interaction_results_struct.interactions);
     
     warning('interaction_results: hack where it assumes 2 cell channels')
     
     unique_interaction_counts = zeros(num_wells, 3);
+    taulist = cell(1,3);
     
     % wells where there are no <x> cells should not contribute to histogram
     
+    for well_idx = 1:num_wells
+%         taulist{1} = zeros(1,num_wells);
+%         taulist{2} = zeros(1,num_wells);
+%         taulist{3} = zeros(1,num_wells);
+        
+        for UIC_col_idx = 1:numel(options.cell_channels)
+            channel_idx = UIC_col_idx + options.cell_channels(1) - 1;
+            
+            props_struct = cell_tracking_results_struct.linked_object_cells{well_idx,channel_idx};
+            
+            if numel(props_struct) < 2
+                unique_interaction_counts(well_idx,UIC_col_idx) = NaN;
+                
+                if numel(props_struct) < 1
+                    unique_interaction_counts(well_idx,3) = NaN;
+                end
+            end
+        end
+    end
+
+%     unique_interaction_counts(isnan(sum(unique_interaction_counts(:,1:2),2)),3) = NaN;
     
+%     unique_interaction_counts
+    
+%     return
     
     for well_idx = 1:num_wells
         well_interactions = cell_interaction_results_struct.interactions{well_idx};
@@ -40,7 +318,7 @@ function interaction_results(cell_interaction_results_struct,options)
             int = well_interactions(interaction_idx);
             
             % how many unique interactions for these two cells
-            
+            int.interacting_flag
             changes = int.interacting_flag(2:end) - int.interacting_flag(1:end-1);
             UIC = sum(changes == -1) + 1;
             
@@ -56,18 +334,64 @@ function interaction_results(cell_interaction_results_struct,options)
             
             % how long did each interaction last?
             
+            % Find transition points (this is from HMM-Bayes analysis)
+            
+            transpoints = find(int.interacting_flag(2:end) - int.interacting_flag(1:end-1));
+            
+            cur_idx = 1;
+
+            for i = 1:numel(transpoints)
+                state = int.interacting_flag(transpoints(i));
+                
+                if state
+                    if i == 1
+                        taulist{UIC_col} = [taulist{UIC_col}, transpoints(i)-cur_idx+1];
+                    else
+                        taulist{UIC_col} = [taulist{UIC_col}, transpoints(i)-cur_idx];
+                    end
+                end
+
+                cur_idx = transpoints(i);
+            end
+
+            % Add the last one
+
+            state = int.interacting_flag(end);
+            
+            if state
+                taulist{UIC_col} = [taulist{UIC_col}, numel(int.interacting_flag)-cur_idx];
+            end
+
+%             error
+            
+            if any(taulist{UIC_col} == 0)
+                error
+            end
             
         end
 
     end
     
-    UIC_1_hist_loc = 0:max(unique_interaction_counts(:,1))+1;
-    UIC_2_hist_loc = 0:max(unique_interaction_counts(:,2))+1;
-    UIC_combo_hist_loc = 0:max(unique_interaction_counts(:,3))+1;
+%     taulist{1}
+%     taulist{2}
+%     taulist{3}
+    
+    UIC_1_hist_loc = 0:10;%max(unique_interaction_counts(:,1))+1;
+    UIC_2_hist_loc = 0:10;%max(unique_interaction_counts(:,2))+1;
+    UIC_combo_hist_loc = 0:10;%max(unique_interaction_counts(:,3))+1;
 
     UIC_1_hist = histc(unique_interaction_counts(:,1),UIC_1_hist_loc);
     UIC_2_hist = histc(unique_interaction_counts(:,2),UIC_2_hist_loc);
     UIC_combo_hist = histc(unique_interaction_counts(:,3),UIC_combo_hist_loc);
+    
+%     idcs = unique_interaction_counts(:,1) >= 10;
+%     UIC_1_hist(end) = sum(unique_interaction_counts(idcs,1));
+%     idcs = unique_interaction_counts(:,2) >= 10;
+%     UIC_2_hist(end) = sum(unique_interaction_counts(idcs,2));
+%     idcs = unique_interaction_counts(:,3) >= 10;
+%     UIC_combo_hist(end) = sum(unique_interaction_counts(idcs,3));
+    
+    comb_string = [options.channel_labels{options.cell_channels(1)} ' <-> ' options.channel_labels{options.cell_channels(2)} ' interaction'];
     
     figure(134287)
     clf
@@ -82,8 +406,33 @@ function interaction_results(cell_interaction_results_struct,options)
             ylabel('# wells')
             title('Number of unique cell-cell interactions found per well')
 
+            xlim([0 10])
+            
             box on
             grid on
+            
+        subplot(1,3,2)
+            hold all
+
+            bar(1, mean(taulist{1}), 'facecolor', 'r'); 
+            bar(2, mean(taulist{2}), 'facecolor', 'g'); 
+            bar(3, mean(taulist{3}), 'facecolor', 'b');
+            
+            errorbar(1, mean(taulist{1}), std(taulist{1}), 'k', 'LineWidth',5, 'linestyle', 'none');
+            errorbar(2, mean(taulist{2}), std(taulist{2}), 'k', 'LineWidth',5, 'linestyle', 'none');
+            errorbar(3, mean(taulist{3}), std(taulist{3}), 'k', 'LineWidth',5, 'linestyle', 'none');
+            
+%             sigstar(NSPF_groups,NSPF_p_values);
+            
+            title('Average lifetime of interaction')
+            ylabel('Lifetime (frames)')
+            xlabel('Cell type / interaction')
+
+            yl = ylim;
+            ylim([0, yl(2)])
+
+            set(gca,'XTick',1:3)
+            set(gca,'XTickLabel','')
             
         subplot(1,3,3)
             hold all
@@ -95,8 +444,6 @@ function interaction_results(cell_interaction_results_struct,options)
             xlim([0 1])
             ylim([0 1])
             axis off
-            
-            comb_string = [options.channel_labels{options.cell_channels(1)} ' <-> ' options.channel_labels{options.cell_channels(2)} ' interaction'];
             
             legend([options.channel_labels(options.cell_channels), {comb_string}])
         

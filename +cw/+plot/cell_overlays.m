@@ -1,6 +1,6 @@
 function cell_overlays(wells, signal_detection_results_struct, cell_segmentation_results_struct, cell_tracking_results_struct, options, make_movies, movie_dir)
 
-    warning('cell_overlays currently only works for a 4 channel movie with signal / cell channels / brightfield')
+%     warning('cell_overlays currently only works for a 4 channel movie with signal / cell channels / brightfield')
 
     delete([movie_dir '/cell_overlays_*_vid.avi'])
 
@@ -33,13 +33,13 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
         
         plot(-1,-1,'-','Color','r','LineWidth',8)
         plot(-1,-1,'-','Color','g','LineWidth',8)
-        plot(-1,-1,'-','Color','b','LineWidth',8)
+%         plot(-1,-1,'-','Color','b','LineWidth',8)
         
         xlim([0 1])
         ylim([0 1])
         axis off
         
-        legend(options.channel_labels)
+        legend(options.channel_labels(options.cell_channels))
         
     set(findall(gcf,'type','text'),'fontSize',20,'fontWeight','bold')
     set(findall(gcf,'type','axes'),'fontSize',20,'fontWeight','bold','LineWidth',3)
@@ -95,7 +95,7 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
             
             drawnow
             
-            pause
+%             pause
 
             if make_movies
                 F=getframe(gcf);
@@ -125,7 +125,7 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
         
         if image_mode == 1
 %             cmap = [0 0 0;1,0,0;0,1,0;0,0,1;1,0,1];
-            cmap = [0 0 0;0,1,0;0,0,1;1,0,1];
+            cmap = [0 0 0;1,0,0;0,1,0;0,0,1];
             
             combined_layers = zeros(size(cur_slice,1),size(cur_slice,2),size(cur_slice,3));
             combined_layers(:,:,1) = 1;
@@ -153,7 +153,9 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
             imshow(rgb)
 
         else
-            imagesc(cur_slice(:,:,[options.signal_channels,options.cell_channels]))
+            img = cat(3,cur_slice(:,:,[options.cell_channels]),zeros(size(cur_slice,1),size(cur_slice,2)));
+            
+            imagesc(img)
         end
 
         if image_mode == 0

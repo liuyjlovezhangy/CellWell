@@ -17,7 +17,9 @@ function process(options)
         im = zloadim(full_filename,1);
         
         if options.last_frame ~= -1
-            im = im(:,:,1:options.last_frame,:);
+            im = im(:,:,options.first_frame:options.last_frame,:);
+        else
+            im = im(:,:,options.first_frame:end,:);
         end
         
         % Perform registration and rotation if desired
