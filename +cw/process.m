@@ -81,6 +81,8 @@ function process(options)
             [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_otsu( im, options );
         elseif strcmp(propts.wseg_mode,'otsu2')
             [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_otsu2( im, options );
+        elseif strcmp(propts.wseg_mode,'bandpass')
+            [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_bandpass( im, options );
         else
             error('Unrecognized well segmentation mode.')
         end
@@ -193,6 +195,9 @@ function process(options)
             end
         elseif strcmp(propts.cseg_mode,'circle')
             [cell_segmentation_results_struct,~] = cw.process.segment_cells_circle( well_tracking_results_struct, ...
+                signal_detection_results_struct, options );
+        elseif strcmp(propts.cseg_mode,'radial')
+            [cell_segmentation_results_struct,~] = cw.process.segment_cells_radial_sym( well_tracking_results_struct, ...
                 signal_detection_results_struct, options );
         else
             error('Unknown cell segmentation mode.')

@@ -2,16 +2,36 @@ function [ output_args ] = test_radial_sym( input_args )
 %TEST_RADIAL_SYM Summary of this function goes here
 %   Detailed explanation goes here
 
-im_all = imread('single_molecule_signal.tif');
+% im_all = imread('single_molecule_signal.tif');
+% im_all = imread('hard_brightfield.tif');
+% im_all = imread('em_watershed_test.tif');
+% im_all = imread('signal4.tif');
+
+im_all = imread('nuclei_slice.tif');
+
 im = im_all(:,:,1);
 im = mat2gray(im);
-im_small = imresize(im,0.25);
-f = frst2d(im_small, 5, 5, 0.5, 'bright');
 
-figure;
-subplot(2,1,1)
-imshow(im_small,[])
-subplot(2,1,2)
-imshow(f,[])
+processopt = 'spatialfilter';
+processparam = [1 8];
+thresh = 0.99;
+fitstr = {'radial','none'};
+try1pernhood = 0;
+
+res = bpass(im,processparam(1),processparam(2));
+
+objs= fo5_rp(im, processopt, processparam, thresh, fitstr, try1pernhood);
+
+    
+
+figure(1342);clf
+subtightplot(2,1,1)
+imagesc(im)
+axis image
+subtightplot(2,1,2)
+imagesc(res)
+axis image
+
+colormap gray
 end
 

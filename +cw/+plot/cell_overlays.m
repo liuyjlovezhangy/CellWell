@@ -153,7 +153,7 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
             imshow(rgb)
 
         else
-            img = cat(3,cur_slice(:,:,[options.cell_channels]),zeros(size(cur_slice,1),size(cur_slice,2)));
+            img = cur_slice;%cat(3,cur_slice(:,:,[options.cell_channels]),zeros(size(cur_slice,1),size(cur_slice,2)));
             
             imagesc(img)
         end
