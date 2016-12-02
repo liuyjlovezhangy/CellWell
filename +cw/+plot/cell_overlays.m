@@ -66,7 +66,7 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
             figure(1833)
             clf
 
-                well_scaled = squeeze(cur_well_im(:,:,frame_idx,1:3));
+                well_scaled = squeeze(cur_well_im(:,:,frame_idx,:));
                 % change channel brightnesses
                 
                 for channel_idx = 1:size(well_scaled,3)
@@ -153,7 +153,7 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
             imshow(rgb)
 
         else
-            img = cur_slice;%cat(3,cur_slice(:,:,[options.cell_channels]),zeros(size(cur_slice,1),size(cur_slice,2)));
+            img = cur_slice(:,:,[options.cell_channels,options.nuclei_channel]);%cat(3,cur_slice(:,:,[options.cell_channels]),zeros(size(cur_slice,1),size(cur_slice,2)));
             
             imagesc(img)
         end

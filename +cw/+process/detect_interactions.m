@@ -12,8 +12,8 @@ function cell_interaction_results_struct = detect_interactions( well_tracking_re
     
     %%% sweep through tracks and find other tracks within a certain distance
 
-    for well_idx = 1:num_wells
-        cell_mask = cell_segmentation_results_struct.cell_masks{well_idx};
+    for well_idx = 25%1:num_wells
+        well_idx
         
         well_interactions = [];
         
@@ -52,6 +52,7 @@ function cell_interaction_results_struct = detect_interactions( well_tracking_re
                             interaction.channel2 = target_channel_idx;
                         
                             well_interactions = [well_interactions, interaction];
+                            
                         
                         end
                         
@@ -193,6 +194,13 @@ function cell_interaction_results_struct = detect_interactions( well_tracking_re
                 end
             end
         end
+        
+        well_interactions.interacting_flag
+        [well_interactions.id1]
+        [well_interactions.id2]
+%         pause
+        error
+        
         
         cell_interaction_results_struct.interactions{well_idx} = well_interactions;
     end

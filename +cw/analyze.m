@@ -21,29 +21,31 @@ function analyze(options)
     
     disp done
     
-    track_cdfs( cell_tracking_results_struct,options );
+%     track_cdfs( cell_tracking_results_struct,options );
     
-%     interaction_results(cell_tracking_results_struct, cell_interaction_results_struct,options);
+    interaction_results(cell_tracking_results_struct, cell_interaction_results_struct,options);
     
 %     cell_location_distributions(cell_tracking_results_struct,options);
 end
 
 function track_cdfs( cell_tracking_results_struct,options )
 
+    F_test_alpha = 0.01;
+
     delta_t = options.time_step;
     umperpx = options.pixel_size;
 
-    num_iterations = 50;
+    num_iterations = 10;
     max_states = 2;
     
     ct = cell_tracking_results_struct.cell_tracks;
     
     for channel_idx = options.cell_channels
-    
+        
         tracks = {};
 
         for well_idx = 1:size(ct,1)
-            tracks = [tracks, ct{well_idx,2}];
+            tracks = [tracks, ct{well_idx,channel_idx}];
         end
 
         %%%%%%%%%%%%%%%%%%
@@ -58,6 +60,9 @@ function track_cdfs( cell_tracking_results_struct,options )
             track = tracks{track_idx};
 
             steps = track(:,2:end) - track(:,1:end-1);
+            
+%             steps = 1*randn(2,20);
+
             steps_cell = [steps_cell, steps];
 
             delta_rs = sqrt( steps(1,:) .^ 2 + steps(2,:) .^2 );
@@ -69,36 +74,33 @@ function track_cdfs( cell_tracking_results_struct,options )
 
         all_delta_rs = all_delta_rs * umperpx;
 
+%         [data_cdf,x_locations] = zecdf(all_delta_rs);
+        
         [data_cdf,x_locations] = ecdf(all_delta_rs);
+        
+%         [data_cdf data_cdf2]
+        
+%         return
 
         %%%%
 
-        steps_matrix = cell2mat(steps_cell);
+        steps_matrix = cell2mat(steps_cell)
 
-        mu_max = max(steps_matrix,[],2); 
-        mu_min = min(steps_matrix,[],2); 
-        sigma_max = max(mu_max-mu_min);
+        steps_matrix = steps_matrix(:,~isnan(sum(steps_matrix,1)))
         
-    end
-    
-    return
+        mu_max = max(steps_matrix,[],2)
+        mu_min = min(steps_matrix,[],2)
+        sigma_max = max(mu_max-mu_min)
         
-        figure(83278)
-        clf
+        D_guess = std2(steps_matrix)^2/(2*delta_t)
         
-        figure(1423)
-        clf
-        
-        figure(5131)
-        clf
-        
-%         save_dir = [master_cfg_path '/HMM_graphs/' group_name];
+        residuals = zeros(max_states,numel(data_cdf));
         
         for num_states = 1:max_states
 
-            beta0 = [ones(1,num_states) / num_states, sigma_max*ones(1,num_states)];
+            beta0 = [ones(1,num_states) / num_states, D_guess*ones(1,num_states)];
 
-            problem = createOptimProblem('lsqcurvefit','x0',beta0,'objective',@(b,x) modelfun(b,x,delta_t),...
+            problem = createOptimProblem('lsqcurvefit','x0',beta0,'objective',@(b,x) cdf_modelfun(b,x,delta_t),...
             'lb',zeros(1,num_states*2),'ub',[ones(1,num_states),sigma_max*ones(1,num_states)],'xdata',x_locations,'ydata',data_cdf);
 
             ms = MultiStart('PlotFcns',@gsplotbestf);
@@ -107,151 +109,130 @@ function track_cdfs( cell_tracking_results_struct,options )
             num_D = numel(beta) / 2;
 
             weights = beta(1:num_D);
-            weights = weights / sum(weights)
-            Ds = beta(num_D+1:end)
+            weights = weights / sum(weights);
+            Ds = beta(num_D+1:end);
 
             [Dsort, Is] = sort(Ds,'descend');
             
             D_cell{1,num_states} = Dsort;
             weight_cell{1,num_states} = weights(Is);
-            
-            %%%%
 
-            figure(1423)
-
-            subplot(2,max_states,num_states)
-            hold all
-
-            plot(x_locations,data_cdf,'--','LineWidth',2)
-            plot(x_locations,modelfun(beta,x_locations,delta_t),'LineWidth',2)
-
-            set(gca,'xscale','log')
-
-            xlabel('Displacement (\mum)')
-            ylabel('P(r,\Deltat)')
-            title(['CDF for ' num2str(num_states) ' states'])
-
-            subplot(2,max_states,max_states+num_states)
-
-            residuals = data_cdf-modelfun(beta,x_locations,delta_t);
-
-            plot(x_locations,residuals)
-            xlabel('Displacement (\mum)')
-            ylabel('Residuals')
-    %         title('Residuals')
-
-            set(gca,'xscale','log')
+            residuals(num_states,:) = data_cdf-cdf_modelfun(beta,x_locations,delta_t);
             
-            %%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            figure(83278)
-            hold all
-
-            if num_states == 1 || num_states == 2
-                plot(x_locations,modelfun(beta,x_locations,delta_t),'LineWidth',2)
-
-                set(gca,'xscale','log')
-
-                xlabel('Displacement (\mum)')
-                ylabel('P(r,\Deltat)')
-%                 title(['CDF for ' num2str(num_states) ' states'])
-            end
-            
-            %%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            figure(5131)
-            
-            subplot(2,max_states,num_states)
-        
-            bar(Dsort)
-            set(gca,'yscale','log')
-            
-            title(['D coeffs for ' num2str(num_states) ' states'])
-            ylabel('Diff coeff (\mum^2/s)')
-            
-            subplot(2,max_states,max_states+num_states)
-            
-            bar(weights(Is))
-            
-            title(['Weights ' num2str(num_states) ' states'])
-            ylabel('Weight (%)')
-            
-            if num_states == 1
-                
-%                 dlmcell([save_dir '/2state_cdf_fxn.csv'],{x_locations', data_cdf', modelfun(beta,x_locations,delta_t)', residuals'},'delimiter',',');
-%                 dlmwrite([save_dir '/1state_cdf_fxn.csv'],[x_locations, data_cdf, modelfun(beta,x_locations,delta_t), residuals],'delimiter',',');
-                
-            end
-            
-            if num_states == 2
-                
-%                 dlmcell([save_dir '/2state_cdf_fxn.csv'],{x_locations', data_cdf', modelfun(beta,x_locations,delta_t)', residuals'},'delimiter',',');
-%                 dlmwrite([save_dir '/2state_cdf_fxn.csv'],[x_locations, data_cdf, modelfun(beta,x_locations,delta_t), residuals],'delimiter',',');
-            end
         end
         
-        figure(1423)
-        set(findall(gcf,'type','text'),'fontSize',20,'fontWeight','bold')
-        set(findall(gcf,'type','axes'),'fontSize',20,'fontWeight','bold')
-%         saveas(gcf,[save_dir '/cdf_fitting.png']);
+        residuals;
         
-        figure(5131)
+        ss_residuals = sum(residuals.^2,2)
+        
+        selected_model = max_states;
+        
+        for num_states = 1:max_states-1
+            k = num_states;
+            p = 2;
+            n = numel(data_cdf);
+            
+            F_stat = (ss_residuals(num_states) - ss_residuals(num_states+1)) / p ...
+                / (ss_residuals(num_states+1) / ...
+                (n-(k+p+1)))
+            
+            df1 = n - k;
+            df2 = n - (k + p);
+            
+            ss_residuals(num_states) - ss_residuals(num_states+1)
+            
+%             F_stat = (ss_residuals(num_states) - ss_residuals(num_states+1)) / (df1 - df2) / (ss_residuals(num_states+1) / df2)
+            
+            P = 1 - fcdf(F_stat,df1,df2)
+
+            if P > F_test_alpha
+                selected_model = num_states;
+                break
+            end
+            
+        end
+        
+        selected_model
+        
+%         return
+        
+        figure(13423+channel_idx)
+        clf
+        
+            for state_idx = 1:max_states
+                
+                subplot(2,max_states,state_idx)
+                    hold all
+
+                    plot(x_locations,cdf_modelfun([weight_cell{state_idx},D_cell{state_idx}],x_locations,delta_t),'g','LineWidth',5)
+                    plot(x_locations,data_cdf,'r-.','LineWidth',3)
+                    
+                    xlim([min(x_locations), max(x_locations)])
+
+                    set(gca,'xscale','log')
+                    
+                    xlabel('Displacement (\mum)')
+                    ylabel('P(r,\Deltat)')
+                    title(['CDF for ' num2str(state_idx) ' states'])
+
+                subplot(2,max_states,max_states+state_idx)
+                    hold all
+                    
+                    residuals = data_cdf-cdf_modelfun([weight_cell{state_idx},D_cell{state_idx}],x_locations,delta_t);
+                    
+                    xlim([min(x_locations), max(x_locations)])
+                    line(xlim,[0 0],'LineStyle','--','LineWidth',3,'Color','k')
+                    
+                    plot(x_locations,residuals,'r-','LineWidth',3)
+                    
+                    set(gca,'xscale','log')
+                    
+                    xlabel('Displacement (\mum)')
+                    ylabel('Residuals')    
+            end
+            
+        suptitle(['CDF fitting for: ' options.channel_labels{channel_idx}])
+            
         set(findall(gcf,'type','text'),'fontSize',14,'fontWeight','bold')
-        set(findall(gcf,'type','axes'),'fontSize',14,'fontWeight','bold')        
-%         saveas(gcf,[save_dir '/cdf_diffcoeffs.png']);
-        
+        set(findall(gcf,'type','axes'),'fontSize',14,'fontWeight','bold')  
+        set(gcf,'Color','white')  
+            
+        figure(13432+channel_idx)
+        clf
 
-    
-    %%%% Compare
-    figure(19824)
-    clf
-        
-    for num_states = 1:max_states
-        
-        subplot(2,max_states,num_states)
-        
-        % Compile conditions
-        
-        Ds = [];
-        weights = [];
-        
-        for condition_idx = 1:size(D_cell,1)
-            Ds = [Ds D_cell{condition_idx,num_states}'];
-            weights = [weights weight_cell{condition_idx,num_states}'];
-        end
-        
-        Ds
-        weights
-        
-        bar(Ds)
-        set(gca,'yscale','log')
+            for state_idx = 1:max_states
+                % Compile conditions
 
-        title(['D coeffs for ' num2str(num_states) ' states'])
-        ylabel('Diff coeff (\mum^2/s)')
+                Ds = D_cell{state_idx}';
+                weights = weight_cell{state_idx}';
 
-        subplot(2,max_states,max_states+num_states)
+                subplot(2,max_states,state_idx)
 
-        bar(weights)
+                    bar(Ds)
 
-        title(['Weights ' num2str(num_states) ' states'])
-        ylabel('Weight (%)')
-        
-        if num_states == 2
-%             dlmcell([master_cfg_path '/HMM_comparison/comparison_2state.csv'],{Ds, weights},'delimiter',',');
-%             dlmwrite([master_cfg_path '/HMM_comparison/comparison_2state.csv'],[Ds, weights],'delimiter',',');
-        end
-        
+                    title(['D coeffs for ' num2str(state_idx) ' states'])
+                    ylabel('Diff coeff (\mum^2/s)')
+
+                subplot(2,max_states,max_states+state_idx)
+
+                    bar(weights)
+
+                    title(['Weights for ' num2str(state_idx) ' states'])
+                    ylabel('Weight (%)')
+            end
+
+        suptitle(['Diffusion coefficients for ' num2str(state_idx) ' states'])
+            
+        set(findall(gcf,'type','text'),'fontSize',14,'fontWeight','bold')
+        set(findall(gcf,'type','axes'),'fontSize',14,'fontWeight','bold')  
+        set(gcf,'Color','white')    
+
     end
+
     
-    figure(83278)
-%     legend('mero_1state','mero_2state','hap_1state','hap_2state')
-    
-    set(findall(gcf,'type','text'),'fontSize',14,'fontWeight','bold')
-    set(findall(gcf,'type','axes'),'fontSize',14,'fontWeight','bold')        
-%     saveas(gcf,[master_cfg_path '/HMM_comparison/cdf_comparison.png']);
 end
 
-function y = modelfun(b,x,delta_t)
+function y = cdf_modelfun(b,x,delta_t)
     %%% Coefficients
     % weights followed by diffusion coefficients
 
@@ -319,18 +300,20 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
             
             % how many unique interactions for these two cells
             int.interacting_flag
-            changes = int.interacting_flag(2:end) - int.interacting_flag(1:end-1);
-            UIC = sum(changes == -1) + 1;
+            changes = int.interacting_flag(2:end) - int.interacting_flag(1:end-1)
+            UIC = sum(changes == -1) + 1
             
-            channel_offset = options.cell_channels(1) - 1;
+            channel_offset = options.cell_channels(1) - 1
             
             if int.channel1 == int.channel2
-                UIC_col = int.channel1 - channel_offset;
+                UIC_col = int.channel1 - channel_offset
             else
-                UIC_col = 3;
+                UIC_col = 3
             end
             
-            unique_interaction_counts(well_idx, UIC_col) = unique_interaction_counts(well_idx, UIC_col) + UIC;
+            unique_interaction_counts(well_idx, UIC_col) = unique_interaction_counts(well_idx, UIC_col) + UIC
+            
+%             return
             
             % how long did each interaction last?
             
@@ -372,13 +355,17 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
 
     end
     
+    unique_interaction_counts
+    
+    return
+    
 %     taulist{1}
 %     taulist{2}
 %     taulist{3}
     
-    UIC_1_hist_loc = 0:10;%max(unique_interaction_counts(:,1))+1;
-    UIC_2_hist_loc = 0:10;%max(unique_interaction_counts(:,2))+1;
-    UIC_combo_hist_loc = 0:10;%max(unique_interaction_counts(:,3))+1;
+    UIC_1_hist_loc = max(unique_interaction_counts(:,1))+1;
+    UIC_2_hist_loc = max(unique_interaction_counts(:,2))+1;
+    UIC_combo_hist_loc = max(unique_interaction_counts(:,3))+1;
 
     UIC_1_hist = histc(unique_interaction_counts(:,1),UIC_1_hist_loc);
     UIC_2_hist = histc(unique_interaction_counts(:,2),UIC_2_hist_loc);

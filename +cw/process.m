@@ -196,8 +196,8 @@ function process(options)
         elseif strcmp(propts.cseg_mode,'circle')
             [cell_segmentation_results_struct,~] = cw.process.segment_cells_circle( well_tracking_results_struct, ...
                 signal_detection_results_struct, options );
-        elseif strcmp(propts.cseg_mode,'radial')
-            [cell_segmentation_results_struct,~] = cw.process.segment_cells_radial_sym( well_tracking_results_struct, ...
+        elseif strcmp(propts.cseg_mode,'circle_bandpass')
+            [cell_segmentation_results_struct,~] = cw.process.segment_cells_circle_bandpass( well_tracking_results_struct, ...
                 signal_detection_results_struct, options );
         else
             error('Unknown cell segmentation mode.')

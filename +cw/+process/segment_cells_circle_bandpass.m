@@ -44,132 +44,67 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                     im_thresh_final = zeros(size(cur_well_im,1),size(cur_well_im,2));
                 else
                     
-                    if frame_idx > 1 
-                        levels_prev = cur_threshold_levels{frame_idx-1,channel_idx};
-                    else
-                        levels_prev = [];
-                    end
-                    
                     im_slice = cur_well_im(:,:,frame_idx,channel_idx);
                     
                     %%% image modifications to make the Hough circle
                     %%% detection work effectively
                     
-%                     im_contrast = imadjust(im_slice,[],[],0.50);
-                    
-                    im_filtered = bpass(im_slice,1,5);
-                    im_expanded = imresize(im_filtered,2,'method','bicubic');
-                    
-%                     im_expanded = imresize(im_contrast,2,'method','bicubic');
-                    
-%                     figure(1342);
-%                     clf
-%                     
-%                         imagesc(im_expanded)
-%                         axis image
-%                         
-%                         colormap gray
-%                         
-%                         error
-                    
-%                     im_expanded = convolveGaussian(im_expanded,3.5);
-%                     im_expanded = imsharpen(im_expanded);
+                    im_expanded = imresize(im_slice,2,'method','bicubic');
 
-                    %%% Hough circle detection
-                    im_thresh = otsu(im_expanded,2);
+                    im_expanded = padarray(im_expanded,[30 30]);
+                    
+                    im_expanded = bpass(im_expanded,1,31);
+                    im_expanded = convolveGaussian(im_expanded,6);
 
-                    im_thresh(im_thresh(:) ~= 2) = 0;
-                    
-%                     im_thresh = threshold3D(im_filtered_expanded, cur_threshold_levels{frame_idx,channel_idx}.level);
-                    
-                    % kill edge effect
-    
-                    im_thresh(1,:) = 0;
-                    im_thresh(end,:) = 0;
-                    im_thresh(:,1) = 0;
-                    im_thresh(:,end) = 0;
-                    
-                    % kill connections between objects
-    
-                    seopen = strel('disk',3);
-                    im_thresh = imopen(im_thresh,seopen);
-                    
-%                     figure(1342);
-%                     clf
-%                     
-%                         imagesc(im_thresh)
-%                         axis image
-%                         
-%                         colormap gray
-%                         
-%                         error
+                    im_expanded = im_expanded(31:end-30,31:end-30);
+                    im_expanded = imsharpen(im_expanded);
 
-                    % Clear very small objects
-                    im_thresh = bwareaopen(im_thresh, 6);
+                    im_thresh = imdilate(imopen(im_expanded > 0.01,strel('disk',6)),strel('disk',0));
 
                     im_expanded_thresholded = im_expanded;
                     im_expanded_thresholded(im_thresh(:) == 0) = 0;
 
                     im_expanded_thresholded = reshape(im_expanded_thresholded,size(im_expanded));
                     
-                    [centers,radii] = imfindcircles(im_expanded,[5 20],'Sensitivity',0.85,'EdgeThreshold',0.05);
+                    [centers,radii] = imfindcircles(im_expanded_thresholded,[4 20],'Sensitivity',0.85,'EdgeThreshold',0.05);
                     
                     [centers,radii] = RemoveOverLap(centers,radii,10,4);
-                    
-%                     if propts.cseg_debug
-%                         
-%                         figure(123523)
-%                         clf
-% %                             subplot(1,2,1)
-% %                                 hold all
-% % 
-% %                                 xvals = cur_thresh_xvals{frame_idx,channel_idx};
-% %                                 yvals = cur_thresh_yvals{frame_idx,channel_idx};
-% % 
-% %                                 xvals(yvals <= 0) = [];
-% %                                 yvals(yvals <= 0) = [];
-% % 
-% %                                 plot(xvals,yvals,'-k.','LineWidth',3,'MarkerSize',25)
-% % 
-% %                                 set(gca,'yscale','log')
-% %                                 set(gca,'xscale','log')
-% % 
-% %                                 if ~isempty(cur_threshold_levels{frame_idx,channel_idx}.level)
-% %                                     line([cur_threshold_levels{frame_idx,channel_idx}.level cur_threshold_levels{frame_idx,channel_idx}.level],ylim,'LineStyle','--','Color','k','LineWidth',3)
-% %                                 end
-% 
-%                                 xlabel('Normalized pixel intensity')
-%                                 ylabel('Average object area (px)')
-% 
-%                                 if channel_idx == 1
-%                                     title('Adaptive thresholding')
-%                                 end
-% 
-%                                 pos = get(gca,'OuterPosition');
-%                                 set(gca,'OuterPosition',[pos(1), pos(2) + 0.01, pos(3), pos(4)])
-% 
-%                                 box on
-%                                 grid on
-% 
-%                                 if ~isempty(xvals)
-%                                     xlim([min(xvals),max(xvals)])
-%                                 end
-%                             
-%                             subplot(1,2,2)
-%                                 hold all
-%                                 imagesc(im_thresh)
-%                                 
-%                                 axis image
-%                                 set(gca,'Ydir','Reverse')
-%                                 axis off 
-% 
-%                                 colormap gray
-% %                             pause
-%                     end
 
                     % now return thresh to its original size
                     
-                    im_thresh = imresize(im_thresh,0.5,'method','nearest');
+                    im_thresh = imresize(im_thresh,0.5);
+                    
+                    %%% remove circles whose circumferences intersect
+                    
+                    if numel(radii) > 1
+                    
+                        final_centers = [];
+                        final_radii = [];
+
+                        for circle_idx = 1:numel(radii)
+                            center = centers(circle_idx,:);
+                            radius = radii(circle_idx);
+
+                            other_idcs = (1:numel(radii)) ~= circle_idx;
+
+                            other_centers = centers(other_idcs,:);
+                            other_radii = radii(other_idcs);
+
+                            distances = eucl_dist(repmat(center',[1,numel(other_radii)]),other_centers');
+                            overlap = repmat(radius,[numel(other_radii),1]) + other_radii - distances' - 4;
+                            smaller_flag = repmat(radius,[numel(other_radii),1]) < other_radii;
+
+                            if any(overlap > 0 & smaller_flag)
+                                continue
+                            end
+
+                            final_centers = [final_centers; center];
+                            final_radii = [final_radii; radius];
+                        end
+
+                        centers = final_centers;
+                        radii = final_radii;
+                    end
                     
                     %%% remove circles not in mask
 
@@ -186,6 +121,8 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                     contained = zeros(1,size(centers,1));
                     
                     im_thresh_final = zeros(size(im_thresh));
+                    
+                    centers_contained = [];
                     
                     if numel(centers) ~= 0 && ~isempty(objects)
                         
