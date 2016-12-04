@@ -37,14 +37,23 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(
         
         cur_frame = im_bf(:,:,frame_idx);
         
-        im_noise(:,:,frame_idx) = bpass(cur_frame,1,30);
-
+        padsize = 50;
+        
+        cur_frame = padarray(cur_frame,[padsize padsize]);
+        im_temp = bpass(cur_frame,1,30);
+        
+        
+        
+        cur_frame = cur_frame(padsize+1:end-padsize,padsize+1:end-padsize);
+        im_noise(:,:,frame_idx) = im_temp(padsize+1:end-padsize,padsize+1:end-padsize);
+        
         in = im_noise(:,:,frame_idx);
 
-        seclose = strel('rect',[5 5]);
-        seopen = strel('rect',[5 5]);
+        seclose = strel('rect',[1 1]);
+        seopen1 = strel('rect',[1 1]);
+        seopen2 = strel('rect',[30 30]);
         
-        im_seg(:,:,frame_idx) = imfill(imopen(imclose(imclearborder(in==0),seclose),seopen),'holes');
+        im_seg(:,:,frame_idx) = imopen(imfill(imopen(imclose(imclearborder(in<0.0001),seclose),seopen1),'holes'),seopen2);
 
         if options.processing_options.wseg_debug
             figure(14332)

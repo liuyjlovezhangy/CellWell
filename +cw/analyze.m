@@ -21,9 +21,9 @@ function analyze(options)
     
     disp done
     
-%     track_cdfs( cell_tracking_results_struct,options );
+    track_cdfs( cell_tracking_results_struct,options );
     
-    interaction_results(cell_tracking_results_struct, cell_interaction_results_struct,options);
+%     interaction_results(cell_tracking_results_struct, cell_interaction_results_struct,options);
     
 %     cell_location_distributions(cell_tracking_results_struct,options);
 end
@@ -253,23 +253,17 @@ function y = cdf_modelfun(b,x,delta_t)
 
 end
 
-
-
-
 function interaction_results(cell_tracking_results_struct, cell_interaction_results_struct,options)
     num_wells = numel(cell_interaction_results_struct.interactions);
     
     warning('interaction_results: hack where it assumes 2 cell channels')
     
-    unique_interaction_counts = zeros(num_wells, 3);
+    unique_interaction_counts = zeros(num_wells, 3, 5); % the last is how many histogram bars we'll have
     taulist = cell(1,3);
     
     % wells where there are no <x> cells should not contribute to histogram
     
     for well_idx = 1:num_wells
-%         taulist{1} = zeros(1,num_wells);
-%         taulist{2} = zeros(1,num_wells);
-%         taulist{3} = zeros(1,num_wells);
         
         for UIC_col_idx = 1:numel(options.cell_channels)
             channel_idx = UIC_col_idx + options.cell_channels(1) - 1;
@@ -277,20 +271,14 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
             props_struct = cell_tracking_results_struct.linked_object_cells{well_idx,channel_idx};
             
             if numel(props_struct) < 2
-                unique_interaction_counts(well_idx,UIC_col_idx) = NaN;
+                unique_interaction_counts(well_idx,UIC_col_idx,:) = NaN;
                 
                 if numel(props_struct) < 1
-                    unique_interaction_counts(well_idx,3) = NaN;
+                    unique_interaction_counts(well_idx,3,:) = NaN;
                 end
             end
         end
     end
-
-%     unique_interaction_counts(isnan(sum(unique_interaction_counts(:,1:2),2)),3) = NaN;
-    
-%     unique_interaction_counts
-    
-%     return
     
     for well_idx = 1:num_wells
         well_interactions = cell_interaction_results_struct.interactions{well_idx};
@@ -298,22 +286,26 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
         for interaction_idx = 1:numel(well_interactions)
             int = well_interactions(interaction_idx);
             
+            A = int.interacting_flag;
+            B = [0 A 0];
+            
             % how many unique interactions for these two cells
-            int.interacting_flag
-            changes = int.interacting_flag(2:end) - int.interacting_flag(1:end-1)
-            UIC = sum(changes == -1) + 1
+            changes = B(2:end) - B(1:end-1);
+            UIC_count_idx = sum(changes == -1) + 1;
             
-            channel_offset = options.cell_channels(1) - 1
-            
-            if int.channel1 == int.channel2
-                UIC_col = int.channel1 - channel_offset
-            else
-                UIC_col = 3
+            if UIC_count_idx >= size(unique_interaction_counts,3)
+                UIC_count_idx = size(unique_interaction_counts,3);
             end
             
-            unique_interaction_counts(well_idx, UIC_col) = unique_interaction_counts(well_idx, UIC_col) + UIC
+            channel_offset = options.cell_channels(1) - 1;
             
-%             return
+            if int.channel1 == int.channel2
+                UIC_col = int.channel1 - channel_offset;
+            else
+                UIC_col = 3;
+            end
+            
+            unique_interaction_counts(well_idx, UIC_col, UIC_count_idx) = unique_interaction_counts(well_idx, UIC_col, UIC_count_idx) + 1;
             
             % how long did each interaction last?
             
@@ -345,55 +337,42 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
                 taulist{UIC_col} = [taulist{UIC_col}, numel(int.interacting_flag)-cur_idx];
             end
 
-%             error
-            
             if any(taulist{UIC_col} == 0)
                 error
             end
-            
         end
-
     end
     
-    unique_interaction_counts
-    
-    return
-    
-%     taulist{1}
-%     taulist{2}
-%     taulist{3}
-    
-    UIC_1_hist_loc = max(unique_interaction_counts(:,1))+1;
-    UIC_2_hist_loc = max(unique_interaction_counts(:,2))+1;
-    UIC_combo_hist_loc = max(unique_interaction_counts(:,3))+1;
-
-    UIC_1_hist = histc(unique_interaction_counts(:,1),UIC_1_hist_loc);
-    UIC_2_hist = histc(unique_interaction_counts(:,2),UIC_2_hist_loc);
-    UIC_combo_hist = histc(unique_interaction_counts(:,3),UIC_combo_hist_loc);
-    
-%     idcs = unique_interaction_counts(:,1) >= 10;
-%     UIC_1_hist(end) = sum(unique_interaction_counts(idcs,1));
-%     idcs = unique_interaction_counts(:,2) >= 10;
-%     UIC_2_hist(end) = sum(unique_interaction_counts(idcs,2));
-%     idcs = unique_interaction_counts(:,3) >= 10;
-%     UIC_combo_hist(end) = sum(unique_interaction_counts(idcs,3));
+    UIC_hist_loc = 0:size(unique_interaction_counts,3)-1;
     
     comb_string = [options.channel_labels{options.cell_channels(1)} ' <-> ' options.channel_labels{options.cell_channels(2)} ' interaction'];
+    
+    UIC_frac_1 = squeeze(unique_interaction_counts(:,1,:)) ./ repmat(sum(squeeze(unique_interaction_counts(:,1,:)),2),[1,size(unique_interaction_counts,3)]);
+    UIC_frac_2 = squeeze(unique_interaction_counts(:,2,:)) ./ repmat(sum(squeeze(unique_interaction_counts(:,2,:)),2),[1,size(unique_interaction_counts,3)]);
+    UIC_frac_3 = squeeze(unique_interaction_counts(:,3,:)) ./ repmat(sum(squeeze(unique_interaction_counts(:,3,:)),2),[1,size(unique_interaction_counts,3)]);
     
     figure(134287)
     clf
         subplot(1,3,1)
             hold all
 
-            plot(UIC_1_hist_loc,UIC_1_hist,'.-','Color','r','LineWidth',3,'MarkerSize',40)
-            plot(UIC_2_hist_loc,UIC_2_hist,'.-','Color','g','LineWidth',3,'MarkerSize',40)
-            plot(UIC_combo_hist_loc,UIC_combo_hist,'.-','Color','b','LineWidth',3,'MarkerSize',40)
+%             errorbar(UIC_hist_loc,nanmean(UIC_frac_1,1),nanstd(UIC_frac_1,0,1),'.-','Color','r','LineWidth',3,'MarkerSize',40)
+%             errorbar(UIC_hist_loc,nanmean(UIC_frac_2,1),nanstd(UIC_frac_2,0,1),'.-','Color','g','LineWidth',3,'MarkerSize',40)
+%             errorbar(UIC_hist_loc,nanmean(UIC_frac_3,1),nanstd(UIC_frac_3,0,1),'.-','Color','b','LineWidth',3,'MarkerSize',40)
 
+            plot(UIC_hist_loc,nanmean(UIC_frac_1,1),'.-','Color','r','LineWidth',3,'MarkerSize',40)
+            plot(UIC_hist_loc,nanmean(UIC_frac_2,1),'.-','Color','g','LineWidth',3,'MarkerSize',40)
+            plot(UIC_hist_loc,nanmean(UIC_frac_3,1),'.-','Color','b','LineWidth',3,'MarkerSize',40)
+
+            xl = xlim;
+            yl = ylim;
+            
+            xlim([-0.5, 4.5])
+            ylim([0, 1])
+            
             xlabel('Number of unique interactions')
-            ylabel('# wells')
+            ylabel('Fraction of total interactions')
             title('Number of unique cell-cell interactions found per well')
-
-            xlim([0 10])
             
             box on
             grid on
@@ -405,9 +384,9 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
             bar(2, mean(taulist{2}), 'facecolor', 'g'); 
             bar(3, mean(taulist{3}), 'facecolor', 'b');
             
-            errorbar(1, mean(taulist{1}), std(taulist{1}), 'k', 'LineWidth',5, 'linestyle', 'none');
-            errorbar(2, mean(taulist{2}), std(taulist{2}), 'k', 'LineWidth',5, 'linestyle', 'none');
-            errorbar(3, mean(taulist{3}), std(taulist{3}), 'k', 'LineWidth',5, 'linestyle', 'none');
+            errorbar(1, mean(taulist{1}), std(taulist{1}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
+            errorbar(2, mean(taulist{2}), std(taulist{2}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
+            errorbar(3, mean(taulist{3}), std(taulist{3}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
             
 %             sigstar(NSPF_groups,NSPF_p_values);
             

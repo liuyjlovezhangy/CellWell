@@ -90,7 +90,7 @@ function cell_segmentation_results_struct_out = segment_cells_nuclei_assignment(
                 % now detect channel-assigned cell objects in cell channels
 
                 im_thresh_final = bwlabeln(cell_masks(:,:,frame_idx,cell_channel_idx),4);
-                objects_final = regionprops(im_thresh_final,'ConvexHull','Centroid','FilledImage','BoundingBox','Extrema','Area');
+                objects_final = regionprops(im_thresh_final,'ConvexHull','Centroid','FilledImage','BoundingBox','Extrema','Area','EquivDiameter');
 
                 cell_segmentation_results_struct_out.detected_cell_props{well_idx,frame_idx,cell_channel_idx} = objects_final';
 

@@ -193,11 +193,15 @@ function process(options)
                     return
                 end
             end
+
         elseif strcmp(propts.cseg_mode,'circle')
-            [cell_segmentation_results_struct,~] = cw.process.segment_cells_circle( well_tracking_results_struct, ...
+            cell_segmentation_results_struct = cw.process.segment_cells_circle( well_tracking_results_struct, ...
                 signal_detection_results_struct, options );
         elseif strcmp(propts.cseg_mode,'circle_bandpass')
-            [cell_segmentation_results_struct,~] = cw.process.segment_cells_circle_bandpass( well_tracking_results_struct, ...
+            cell_segmentation_results_struct = cw.process.segment_cells_circle_bandpass( well_tracking_results_struct, ...
+                signal_detection_results_struct, options );
+        elseif strcmp(propts.cseg_mode,'radial')
+            cell_segmentation_results_struct = cw.process.segment_cells_radial_sym( well_tracking_results_struct, ...
                 signal_detection_results_struct, options );
         else
             error('Unknown cell segmentation mode.')
@@ -251,9 +255,22 @@ function process(options)
         save([full_filename '__analysis_results/cell_interactions.mat'],'cell_interaction_results_struct')
 
     else
-%         disp('Loading previous cell tracking...')
-%         
-%         cell_interaction_results_struct = importdata([full_filename '__analysis_results/cell_interactions.mat']);
+        disp('Loading previous cell tracking...')
+        
+        cell_interaction_results_struct = importdata([full_filename '__analysis_results/cell_interactions.mat']);
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Cell death detection
+    
+    if propts.start_at <= 7 || ~exist([full_filename '__analysis_results/cell_interactions.mat'],'file')
+        cell_death_results_struct = cw.process.detect_death( well_tracking_results_struct, cell_segmentation_results_struct, cell_tracking_results_struct, options );
+        
+        save([full_filename '__analysis_results/cell_death.mat'],'cell_death_results_struct')
+    else
+        disp('Loading previous cell death detection...')
+        
+        cell_interaction_results_struct = importdata([full_filename '__analysis_results/cell_death.mat']);
     end
 end
 

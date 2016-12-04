@@ -7,20 +7,20 @@ function [ output_args ] = test_radial_sym( input_args )
 % im_all = imread('em_watershed_test.tif');
 % im_all = imread('signal4.tif');
 
-im_all = imread('nuclei_slice.tif');
+im_all = imread('HARD_CHANGING_BF.tif');
 
 im = im_all(:,:,1);
 im = mat2gray(im);
 
 processopt = 'spatialfilter';
-processparam = [1 8];
+processparam = [1 31];
 thresh = 0.99;
 fitstr = {'radial','none'};
 try1pernhood = 0;
 
 res = bpass(im,processparam(1),processparam(2));
 
-objs= fo5_rp(im, processopt, processparam, thresh, fitstr, try1pernhood);
+% objs= fo5_rp(im, processopt, processparam, thresh, fitstr, try1pernhood);
 
     
 

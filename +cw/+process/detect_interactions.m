@@ -1,19 +1,16 @@
 function cell_interaction_results_struct = detect_interactions( well_tracking_results_struct, cell_segmentation_results_struct, cell_tracking_results_struct, options )
-    cell_radius = 1000; % pixels
-    max_dist = 2 * cell_radius + options.interaction_tolerance;
-    
-    warning('detect_interactions: cell radius should be detected for individual cells based on mask. this is currently a hack')
     
     num_wells = size(cell_tracking_results_struct.cell_tracks,1);
-    num_frames = size(cell_segmentation_results_struct.detected_cell_props,2);
+    num_frames = size(well_tracking_results_struct.well_tracks_mat_shifted,2);
     
     cell_interaction_results_struct = [];
     cell_interaction_results_struct.interactions = cell(1,num_wells);
     
     %%% sweep through tracks and find other tracks within a certain distance
 
-    for well_idx = 25%1:num_wells
-        well_idx
+    for well_idx = 1:num_wells
+
+        cell_mask = cell_segmentation_results_struct.cell_masks{well_idx};
         
         well_interactions = [];
         
@@ -38,10 +35,27 @@ function cell_interaction_results_struct = detect_interactions( well_tracking_re
                     for target_track_idx = target_vec
                         target_track = target_tracks_cell{target_track_idx};
                         
-                        distances = eucl_dist(source_track,target_track);
-                        interacting_flag = distances <= max_dist;
+                        cur_objects_sc = cell_tracking_results_struct.linked_object_cells{well_idx,source_channel_idx};
+                        cur_objects_tc = cell_tracking_results_struct.linked_object_cells{well_idx,target_channel_idx};
                         
-                        if any(interacting_flag)
+                        cur_source_object_props = cur_objects_sc(source_track_idx).cell_props;
+                        cur_target_object_props = cur_objects_tc(target_track_idx).cell_props;
+                        
+                        source_radii = NaN * ones(1,num_frames);%[cur_source_object_props.EquivDiameter]/2
+                        target_radii = NaN * ones(1,num_frames);%[cur_target_object_props.EquivDiameter]/2
+                        
+                        source_radii(cur_objects_sc(source_track_idx).start_frame:cur_objects_sc(source_track_idx).end_frame) = [cur_source_object_props.EquivDiameter]/2;
+                        target_radii(cur_objects_tc(target_track_idx).start_frame:cur_objects_tc(target_track_idx).end_frame) = [cur_target_object_props.EquivDiameter]/2;
+                        
+                        max_dists = sum([source_radii;target_radii],1) + options.interaction_tolerance;
+                        
+                        distances = eucl_dist(source_track,target_track);
+                        interacting_flag = distances <= max_dists;
+
+                        if all(isnan(distances))
+                            continue
+                        end
+
                             interaction.distances = distances;
                             interaction.interacting_flag = interacting_flag;
                             interaction.id1 = source_track_idx;
@@ -52,10 +66,7 @@ function cell_interaction_results_struct = detect_interactions( well_tracking_re
                             interaction.channel2 = target_channel_idx;
                         
                             well_interactions = [well_interactions, interaction];
-                            
-                        
-                        end
-                        
+
                         if 0
                         
                             for frame_idx = 1:num_frames
@@ -194,12 +205,6 @@ function cell_interaction_results_struct = detect_interactions( well_tracking_re
                 end
             end
         end
-        
-        well_interactions.interacting_flag
-        [well_interactions.id1]
-        [well_interactions.id2]
-%         pause
-        error
         
         
         cell_interaction_results_struct.interactions{well_idx} = well_interactions;
