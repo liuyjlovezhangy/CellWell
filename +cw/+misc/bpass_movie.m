@@ -9,16 +9,17 @@ function [ output_args ] = test_radial_sym( input_args )
 
 % im_all = zloadim('movies/01_CART1_target/Microwells_4color-03(2)_s2_corrected.tiff',1);
 % im_all = zloadim('movies/04_CART1_only/Microwells_4color-03(18)_s18_corrected.tif',1);
-im_all = zloadim('movies/Microwells_4color-04(10)_s10.ome.tiff',1);
+% im_all = zloadim('movies/Microwells_4color-04(10)_s10.ome.tiff',1);
+im_all = zloadim('bYS40_250nM_561nm_500ms_015-1.tif');
 
 processopt = 'spatialfilter';
-processparam = [2 7];
+processparam = [0.5 15];
 fitstr = {'radial','none'};
 try1pernhood = 0;
-pad = 2*processparam(2);
+pad = 4*processparam(2);
 thresh = 0.01;
 
-for channel_idx = 1:4
+for channel_idx = 1:1
 
     channel_idx
     
@@ -31,6 +32,7 @@ for channel_idx = 1:4
         im_pad = padarray(im,[pad pad]);
 
         im_bpass = bpass(im_pad,processparam(1),processparam(2));
+%         im_bpass(im_bpass < 12) = 0;
 
         new_im(:,:,frame_idx) = im_bpass(pad+1:end-pad,pad+1:end-pad);
     end
@@ -38,7 +40,7 @@ for channel_idx = 1:4
     write_im(new_im,['im_out_' num2str(channel_idx) '.tif']);
 end
 
-write_im(mat2gray(im_all(:,:,:,5)),['im_out_' num2str(5) '.tif']);
+% write_im(mat2gray(im_all(:,:,:,5)),['im_out_' num2str(5) '.tif']);
 
     function write_im(image,filename)
         delete(filename)
