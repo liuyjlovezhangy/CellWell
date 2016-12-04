@@ -24,7 +24,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
     
     validation_images = cell(1,num_channels * num_wells);
     
-    for well_idx = 25%1:num_wells
+    for well_idx = 1:num_wells
         
         cur_well_im = mat2gray(well_tracking_results_struct.wells(well_idx).im_well);
         cur_well_im_thresh = zeros(size(cur_well_im,1),size(cur_well_im,2),num_frames,num_channels);
@@ -59,30 +59,16 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                     im_expanded = im_expanded(31:end-30,31:end-30);
                     im_expanded = imsharpen(im_expanded);
 
-                    im_thresh = imdilate(imopen(im_expanded > 0.01,strel('disk',4)),strel('disk',0));
+                    im_thresh = imdilate(imopen(im_expanded > 0.01,strel('disk',6)),strel('disk',0));
 
                     im_expanded_thresholded = im_expanded;
                     im_expanded_thresholded(im_thresh(:) == 0) = 0;
 
                     im_expanded_thresholded = reshape(im_expanded_thresholded,size(im_expanded));
                     
-                    A = mat2gray(fastradial(im_expanded_thresholded,[1 3 5],2));
-                    A(A < 0.1) = 0;
+                    [centers,radii] = imfindcircles(im_expanded_thresholded,[4 20],'Sensitivity',0.85,'EdgeThreshold',0.05);
                     
-%                     figure(1342);clf;hist(A(A~=0),100)
-                    
-                    [centers, varargout]=FastPeakFind(A,0.1);%, filt ,2, 1, fid)
-                    
-                    figure(12302);clf;hold all;imagesc(A);colormap gray;axis image;set(gca,'Ydir','Reverse');axis off 
-                    
-                    centers = reshape(centers,2,[])';
-                    radii = 10*ones(size(centers,1),1);
-                    
-                    plot(centers(:,1),centers(:,2),'om','MarkerSize',20,'LineWidth',3)
-                    
-%                     [centers,radii,circle_strengths] = imfindcircles(im_expanded_thresholded,[4 20],'Sensitivity',0.85,'EdgeThreshold',0.05);
-                    
-%                     [centers,radii] = RemoveOverLap(centers,radii,10,4);
+                    [centers,radii] = RemoveOverLap(centers,radii,10,4);
 
                     % now return thresh to its original size
                     
@@ -90,35 +76,35 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                     
                     %%% remove circles whose circumferences intersect
                     
-%                     if numel(radii) > 1
-%                     
-%                         final_centers = [];
-%                         final_radii = [];
-% 
-%                         for circle_idx = 1:numel(radii)
-%                             center = centers(circle_idx,:);
-%                             radius = radii(circle_idx);
-% 
-%                             other_idcs = (1:numel(radii)) ~= circle_idx;
-% 
-%                             other_centers = centers(other_idcs,:);
-%                             other_radii = radii(other_idcs);
-% 
-%                             distances = eucl_dist(repmat(center',[1,numel(other_radii)]),other_centers');
-%                             overlap = repmat(radius,[numel(other_radii),1]) + other_radii - distances' - 4;
-%                             smaller_flag = repmat(radius,[numel(other_radii),1]) < other_radii;
-% 
-%                             if any(overlap > 0 & smaller_flag)
-%                                 continue
-%                             end
-% 
-%                             final_centers = [final_centers; center];
-%                             final_radii = [final_radii; radius];
-%                         end
-% 
-%                         centers = final_centers;
-%                         radii = final_radii;
-%                     end
+                    if numel(radii) > 1
+                    
+                        final_centers = [];
+                        final_radii = [];
+
+                        for circle_idx = 1:numel(radii)
+                            center = centers(circle_idx,:);
+                            radius = radii(circle_idx);
+
+                            other_idcs = (1:numel(radii)) ~= circle_idx;
+
+                            other_centers = centers(other_idcs,:);
+                            other_radii = radii(other_idcs);
+
+                            distances = eucl_dist(repmat(center',[1,numel(other_radii)]),other_centers');
+                            overlap = repmat(radius,[numel(other_radii),1]) + other_radii - distances' - 4;
+                            smaller_flag = repmat(radius,[numel(other_radii),1]) < other_radii;
+
+                            if any(overlap > 0 & smaller_flag)
+                                continue
+                            end
+
+                            final_centers = [final_centers; center];
+                            final_radii = [final_radii; radius];
+                        end
+
+                        centers = final_centers;
+                        radii = final_radii;
+                    end
                     
                     %%% remove circles not in mask
 
@@ -266,7 +252,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                     end
                     
                     im_thresh_final = bwlabeln(im_thresh_final,4);
-                    objects_final = regionprops(im_thresh_final,'ConvexHull','Centroid','FilledImage','BoundingBox','Extrema','Area','EquivDiameter');
+                    objects_final = regionprops(im_thresh_final,'ConvexHull','Centroid','FilledImage','BoundingBox','Extrema','Area');
                     
                     % clean up objects that do not meet minimum
                     % requirements
