@@ -35,7 +35,7 @@ function track_cdfs( cell_tracking_results_struct,options )
     delta_t = options.time_step;
     umperpx = options.pixel_size;
 
-    num_iterations = 10;
+    num_iterations = 30;
     max_states = 2;
     
     ct = cell_tracking_results_struct.cell_tracks;

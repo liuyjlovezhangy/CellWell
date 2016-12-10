@@ -5,6 +5,8 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
     warning('off','images:imfindcircles:warnForLargeRadiusRange')
     warning('off','images:imfindcircles:warnForSmallRadius')
     
+    error('fix the line separation procedure before running')
+    
     propts = options.processing_options;
 
     num_wells = numel(well_tracking_results_struct.wells);

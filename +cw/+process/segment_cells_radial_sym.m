@@ -24,7 +24,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
     
     validation_images = cell(1,num_channels * num_wells);
     
-    for well_idx = 25%1:num_wells
+    for well_idx = 1:num_wells
         
         cur_well_im = mat2gray(well_tracking_results_struct.wells(well_idx).im_well);
         cur_well_im_thresh = zeros(size(cur_well_im,1),size(cur_well_im,2),num_frames,num_channels);
@@ -54,10 +54,10 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                     im_expanded = padarray(im_expanded,[30 30]);
                     
                     im_expanded = bpass(im_expanded,1,31);
-                    im_expanded = convolveGaussian(im_expanded,6);
+                    im_expanded = convolveGaussian(im_expanded,5);
 
                     im_expanded = im_expanded(31:end-30,31:end-30);
-                    im_expanded = imsharpen(im_expanded);
+%                     im_expanded = imsharpen(im_expanded);
 
                     im_thresh = imdilate(imopen(im_expanded > 0.01,strel('disk',4)),strel('disk',0));
 
@@ -66,59 +66,29 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
 
                     im_expanded_thresholded = reshape(im_expanded_thresholded,size(im_expanded));
                     
-                    A = mat2gray(fastradial(im_expanded_thresholded,[1 3 5],2));
-                    A(A < 0.1) = 0;
+                    A = fastradial(im_expanded_thresholded,10,2);
+                    A = mat2gray(bpass(A,1,5));
+                    A(A < 0.05) = 0;
                     
 %                     figure(1342);clf;hist(A(A~=0),100)
                     
-                    [centers, varargout]=FastPeakFind(A,0.1);%, filt ,2, 1, fid)
-                    
-                    figure(12302);clf;hold all;imagesc(A);colormap gray;axis image;set(gca,'Ydir','Reverse');axis off 
+                    centers=FastPeakFind(A,0);%, filt ,2, 1, fid)
                     
                     centers = reshape(centers,2,[])';
                     radii = 10*ones(size(centers,1),1);
                     
-                    plot(centers(:,1),centers(:,2),'om','MarkerSize',20,'LineWidth',3)
+                    if propts.cseg_debug
+                        figure(12302);clf;hold all;imagesc(A);colormap gray;axis image;set(gca,'Ydir','Reverse');axis off;set(gcf,'color','w')
+                        plot(centers(:,1),centers(:,2),'om','MarkerSize',20,'LineWidth',3)
+                    end
                     
-%                     [centers,radii,circle_strengths] = imfindcircles(im_expanded_thresholded,[4 20],'Sensitivity',0.85,'EdgeThreshold',0.05);
                     
-%                     [centers,radii] = RemoveOverLap(centers,radii,10,4);
+                    
+                    
 
                     % now return thresh to its original size
                     
                     im_thresh = imresize(im_thresh,0.5);
-                    
-                    %%% remove circles whose circumferences intersect
-                    
-%                     if numel(radii) > 1
-%                     
-%                         final_centers = [];
-%                         final_radii = [];
-% 
-%                         for circle_idx = 1:numel(radii)
-%                             center = centers(circle_idx,:);
-%                             radius = radii(circle_idx);
-% 
-%                             other_idcs = (1:numel(radii)) ~= circle_idx;
-% 
-%                             other_centers = centers(other_idcs,:);
-%                             other_radii = radii(other_idcs);
-% 
-%                             distances = eucl_dist(repmat(center',[1,numel(other_radii)]),other_centers');
-%                             overlap = repmat(radius,[numel(other_radii),1]) + other_radii - distances' - 4;
-%                             smaller_flag = repmat(radius,[numel(other_radii),1]) < other_radii;
-% 
-%                             if any(overlap > 0 & smaller_flag)
-%                                 continue
-%                             end
-% 
-%                             final_centers = [final_centers; center];
-%                             final_radii = [final_radii; radius];
-%                         end
-% 
-%                         centers = final_centers;
-%                         radii = final_radii;
-%                     end
                     
                     %%% remove circles not in mask
 
@@ -169,7 +139,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                             if sum(temp_contained) < 2
                                 temp_image(imloc_i,imloc_j) = objects(object_idx).FilledImage;
 
-                            elseif sum(temp_contained) == 2
+                            else
 
                                 ti = objects(object_idx).FilledImage;
 
@@ -177,84 +147,31 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
 
                                 temp_centers_contained_shifted = [temp_centers_contained(:,1) - start_j, temp_centers_contained(:,2) - start_i];
 
-                                line_center = mean(temp_centers_contained_shifted,1);
-
-                                m = diff(temp_centers_contained_shifted(:,2)) / diff(temp_centers_contained_shifted(:,1));
-                                orth_m = -1/m;
-
-                                ifun = @(j) orth_m * j - orth_m * line_center(1) + line_center(2);
-                                jfun = @(i) (i - line_center(2))/orth_m + line_center(1);
-
-                                % at really steep/shallow angles you have
-                                % to change the independent variable or you
-                                % won't have enough points to slice the
-                                % objects apart
+                                obj_map = zeros(size(ti));
                                 
-                                if abs(orth_m) < 1 % shallow angle
-                                    i_start = ifun(1);
-                                    i_end = ifun(size(ti,1));
-
-                                    i_idcs = linspace(i_start,i_end,2*sqrt(size(ti,1)^2 + size(ti,2)^2));
-                                    j_idcs = round(jfun(i_idcs));
-                                    i_idcs = round(i_idcs);
-                                else
-                                    j_start = jfun(1);
-                                    j_end = jfun(size(ti,2));
-
-                                    j_idcs = linspace(j_start,j_end,2*sqrt(size(ti,1)^2 + size(ti,2)^2));
-                                    i_idcs = round(ifun(j_idcs));
-                                    j_idcs = round(j_idcs);
+                                for center_idx = 1:size(temp_centers_contained_shifted,1)
+                                    obj_map(round(temp_centers_contained_shifted(center_idx,2)),round(temp_centers_contained_shifted(center_idx,1))) = 1;
                                 end
 
-                                for idx = 1:numel(i_idcs)
-                                    if (i_idcs(idx) > size(ti,1)) || (j_idcs(idx) > size(ti,2))
-                                        continue
-                                    end
-
-                                    if (i_idcs(idx) < 1) || (j_idcs(idx) < 1)
-                                        continue
-                                    end
-
-                                    ti(i_idcs(idx),j_idcs(idx)) = 0;
-                                end
-
+                                dist_map = bwdist(~obj_map);%%imcomplement(bwdist(obj_map));
+                                
+%                                 if propts.cseg_debug
+%                                     figure(1622);clf;hold all;imagesc(dist_map);colormap gray;axis image;set(gca,'Ydir','Reverse');axis off;set(gcf,'color','w')
+%                                 end
+                                
+                                dist_map(~ti) = -inf;
+                                dist_map = -dist_map;
+                                
+                                L_water = watershed(dist_map);
+                                
                                 if propts.cseg_debug
-                                    figure(13542)
-                                    clf
-                                        hold all
-
-                                        imagesc(ti)
-
-                                        plot(temp_centers_contained_shifted(:,1),temp_centers_contained_shifted(:,2),'og-','MarkerSize',30,'LineWidth',5)
-                                        plot(line_center(1),line_center(2),'xm','MarkerSize',30,'LineWidth',5)
-
-                                        axis image
-                                        set(gca,'Ydir','Reverse')
-                                        axis off 
-
-                                        colormap gray
-
-%                                         pause
+                                    figure(1342);clf;imagesc(L_water);colormap gray;axis image;axis off;
                                 end
+                                
+                                water_mask = L_water ~= 0;
+                                
+                                temp_image(imloc_i,imloc_j) = ti & water_mask;
 
-                                se = strel('disk',2);
-                                ti = imopen(ti,se);
-
-                                temp_image(imloc_i,imloc_j) = ti;
-
-                            elseif sum(temp_contained) > 2
-
-                                temp_centers_contained = [temp_centers_contained(:,1) - start_j,temp_centers_contained(:,2) - start_i];
-
-                                ti = voronoi2mask(temp_centers_contained(:,1),temp_centers_contained(:,2),size(objects(object_idx).FilledImage));
-
-                                masked_ti = ti;
-                                masked_ti(imcomplement(ti & objects(object_idx).FilledImage)) = 0;
-
-                                se = strel('disk',2);
-                                masked_ti = imopen(masked_ti,se);
-
-                                temp_image(imloc_i,imloc_j) = logical(masked_ti);
                             end
 
                             im_thresh_final = im_thresh_final | temp_image;
@@ -424,6 +341,8 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                         
                         suptitle(['Well: ' num2str(well_idx) ' Frame: ' num2str(frame_idx) ' Channel: ' num2str(channel_idx)])
                                 
+                        set(gcf,'color','w')
+                        
                         pause
                     end
                 end
@@ -444,25 +363,6 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
         multiWaitbar('Performing cell segmentation...',well_idx / num_wells);
     end
     
-%     if options.ask_me
-%         % build a validation image array
-%         
-%         for well_idx = 1:num_wells
-%             for channel_idx = 1:num_channels
-%                 cur_well_im =  mat2gray(well_tracking_results_struct.wells(well_idx).im_well(:,:,:,channel_idx));
-%                 cur_well_im_thresh_nowater = cell_masks_nowater{well_idx}(:,:,:,channel_idx);
-%                 cur_watershed_inputs = watershed_inputs{well_idx}(:,:,:,channel_idx);
-%                 cur_well_im_thresh_water = cell_masks_water{well_idx}(:,:,:,channel_idx);
-%                 
-%                 valim = [cur_well_im, cur_well_im_thresh_nowater, cur_watershed_inputs, cur_well_im_thresh_water];
-%                 
-%                 validation_images{sub2ind([num_channels,num_wells],channel_idx,well_idx)} = valim;
-%             end
-%         end
-%         
-%     end
-    
-    
     cell_segmentation_results_struct.cell_masks = cell_masks;
     cell_segmentation_results_struct.threshold_levels = all_threshold_levels;
     cell_segmentation_results_struct.thresh_xvals = all_thresh_xvals;
@@ -472,6 +372,5 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
     
     multiWaitbar('CloseAll');
     drawnow
-    
-%     error
+
 end

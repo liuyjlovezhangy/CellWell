@@ -61,7 +61,7 @@ function cell_death_results = detect_death( well_tracking_results_struct, cell_s
                         
                         figure(13742)
                         clf
-                            subtightplot(1,4,1)
+                            subtightplot(2,4,1)
                                 hold all
 
                                 imagesc(cur_slice)
@@ -73,7 +73,7 @@ function cell_death_results = detect_death( well_tracking_results_struct, cell_s
                                 set(gca,'XTick',[])
                                 set(gca,'YTick',[])
                                 
-                            subtightplot(1,4,2)
+                            subtightplot(2,4,2)
                                 hold all
 
                                 imagesc(for_slice)
@@ -85,7 +85,7 @@ function cell_death_results = detect_death( well_tracking_results_struct, cell_s
                                 set(gca,'XTick',[])
                                 set(gca,'YTick',[])
 
-                            subtightplot(1,4,3)
+                            subtightplot(2,4,3)
                                 hold all
 
                                 imagesc(sig_slice_thresh)
@@ -97,7 +97,7 @@ function cell_death_results = detect_death( well_tracking_results_struct, cell_s
                                 set(gca,'XTick',[])
                                 set(gca,'YTick',[])
                                 
-                            subtightplot(1,4,4)
+                            subtightplot(2,4,4)
                                 hold all
 
                                 imagesc(back_slice)
@@ -108,10 +108,33 @@ function cell_death_results = detect_death( well_tracking_results_struct, cell_s
                                 set(gca,'Color','white')
                                 set(gca,'XTick',[])
                                 set(gca,'YTick',[])
+                                
+                            subplot(2,2,3)
+                            
+                                hist(sig_slice_thresh(:))
+                                
+                                xlim([0 1])
+                                
+                                title('Signal histogram')
+                                ylabel('Count')
+                                xlabel('Intensity')
+                                
+                            subplot(2,2,4)
+                            
+                                hist(back_slice(:))
+                                
+                                xlim([0 1])
+                                
+                                title('Background histogram')
+                                ylabel('Count')
+                                xlabel('Intensity')
+                                
 
                         colormap gray
 
-                        suptitle([num2str(well_idx) ' ' num2str(channel_idx) ' ' num2str(cell_idx) ' ' num2str(p_value)])
+                        set(gcf,'color','w')
+                        suptitle(['P-value: ' num2str(p_value)])
+%                         suptitle([num2str(well_idx) ' ' num2str(channel_idx) ' ' num2str(cell_idx) ' ' num2str(p_value)])
                         
                         pause
                     end
