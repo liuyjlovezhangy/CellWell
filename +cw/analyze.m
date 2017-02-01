@@ -21,9 +21,9 @@ function analyze(options)
     
     disp done
     
-    track_cdfs( cell_tracking_results_struct,options );
+%     track_cdfs( cell_tracking_results_struct,options );
     
-%     interaction_results(cell_tracking_results_struct, cell_interaction_results_struct,options);
+    interaction_results(cell_tracking_results_struct, cell_interaction_results_struct,options);
     
 %     cell_location_distributions(cell_tracking_results_struct,options);
 end
@@ -367,7 +367,7 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
             xl = xlim;
             yl = ylim;
             
-            xlim([-0.5, 4.5])
+            xlim([-0.5, 5.5])
             ylim([0, 1])
             
             xlabel('Number of unique interactions')

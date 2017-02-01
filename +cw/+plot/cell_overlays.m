@@ -69,9 +69,27 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
                 well_scaled = squeeze(cur_well_im(:,:,frame_idx,:));
                 % change channel brightnesses
                 
-%                 for channel_idx = 1:size(well_scaled,3)
-%                     well_scaled(:,:,channel_idx) = mat2gray(well_scaled(:,:,channel_idx));
-%                 end
+                for channel_idx = 1:size(well_scaled,3)
+                    well_scaled(:,:,channel_idx) = imadjust(well_scaled(:,:,channel_idx),stretchlim(well_scaled(:,:,channel_idx),[0.25,1]),[],1.3);
+
+
+                    padsize = 70*5;
+
+%                     well_tmp = well_scaled(:,:,channel_idx);
+                    
+%                     [~,~,outliers] = deleteoutliers(well_tmp(:),0.01);
+% 
+%                     well_tmp(well_tmp < min(outliers)) = 0;
+                    
+%                     well_tmp = padarray(well_tmp,[padsize padsize]);
+%                     well_tmp = bpass(well_tmp,2,padsize/5);
+%                     well_tmp = convolveGaussian(well_tmp,3);
+%                     well_tmp = well_tmp(padsize+1:end-padsize,padsize+1:end-padsize);
+
+%                     well_scaled(:,:,channel_idx) = well_tmp;
+                    
+                    well_scaled(:,:,channel_idx) = mat2gray(well_scaled(:,:,channel_idx));
+                end
                 
                 well_scaled(:,:,options.signal_channels) = 0;
 

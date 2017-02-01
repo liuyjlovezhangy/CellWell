@@ -49,94 +49,94 @@ function cell_death_results = detect_death( well_tracking_results_struct, cell_s
                     
                     if p_value < 1e-12
                     
-                        figure(82493)
-                        clf
-                        hist(sig_slice_thresh(sig_slice_thresh ~= 0),100)
-                        xlim([0 0.2])
-                        
-                        figure(82393)
-                        clf
-                        hist(back_slice(back_slice ~= 0),100)
-                        xlim([0 0.2])
-                        
-                        figure(13742)
-                        clf
-                            subtightplot(2,4,1)
-                                hold all
-
-                                imagesc(cur_slice)
-
-                                axis image
-                                set(gca,'Ydir','Reverse')
-
-                                set(gca,'Color','white')
-                                set(gca,'XTick',[])
-                                set(gca,'YTick',[])
-                                
-                            subtightplot(2,4,2)
-                                hold all
-
-                                imagesc(for_slice)
-
-                                axis image
-                                set(gca,'Ydir','Reverse')
-
-                                set(gca,'Color','white')
-                                set(gca,'XTick',[])
-                                set(gca,'YTick',[])
-
-                            subtightplot(2,4,3)
-                                hold all
-
-                                imagesc(sig_slice_thresh)
-
-                                axis image
-                                set(gca,'Ydir','Reverse')
-
-                                set(gca,'Color','white')
-                                set(gca,'XTick',[])
-                                set(gca,'YTick',[])
-                                
-                            subtightplot(2,4,4)
-                                hold all
-
-                                imagesc(back_slice)
-
-                                axis image
-                                set(gca,'Ydir','Reverse')
-
-                                set(gca,'Color','white')
-                                set(gca,'XTick',[])
-                                set(gca,'YTick',[])
-                                
-                            subplot(2,2,3)
-                            
-                                hist(sig_slice_thresh(:))
-                                
-                                xlim([0 1])
-                                
-                                title('Signal histogram')
-                                ylabel('Count')
-                                xlabel('Intensity')
-                                
-                            subplot(2,2,4)
-                            
-                                hist(back_slice(:))
-                                
-                                xlim([0 1])
-                                
-                                title('Background histogram')
-                                ylabel('Count')
-                                xlabel('Intensity')
-                                
-
-                        colormap gray
-
-                        set(gcf,'color','w')
-                        suptitle(['P-value: ' num2str(p_value)])
-%                         suptitle([num2str(well_idx) ' ' num2str(channel_idx) ' ' num2str(cell_idx) ' ' num2str(p_value)])
-                        
-                        pause
+%                         figure(82493)
+%                         clf
+%                         hist(sig_slice_thresh(sig_slice_thresh ~= 0),100)
+%                         xlim([0 0.2])
+%                         
+%                         figure(82393)
+%                         clf
+%                         hist(back_slice(back_slice ~= 0),100)
+%                         xlim([0 0.2])
+%                         
+%                         figure(13742)
+%                         clf
+%                             subtightplot(2,4,1)
+%                                 hold all
+% 
+%                                 imagesc(cur_slice)
+% 
+%                                 axis image
+%                                 set(gca,'Ydir','Reverse')
+% 
+%                                 set(gca,'Color','white')
+%                                 set(gca,'XTick',[])
+%                                 set(gca,'YTick',[])
+%                                 
+%                             subtightplot(2,4,2)
+%                                 hold all
+% 
+%                                 imagesc(for_slice)
+% 
+%                                 axis image
+%                                 set(gca,'Ydir','Reverse')
+% 
+%                                 set(gca,'Color','white')
+%                                 set(gca,'XTick',[])
+%                                 set(gca,'YTick',[])
+% 
+%                             subtightplot(2,4,3)
+%                                 hold all
+% 
+%                                 imagesc(sig_slice_thresh)
+% 
+%                                 axis image
+%                                 set(gca,'Ydir','Reverse')
+% 
+%                                 set(gca,'Color','white')
+%                                 set(gca,'XTick',[])
+%                                 set(gca,'YTick',[])
+%                                 
+%                             subtightplot(2,4,4)
+%                                 hold all
+% 
+%                                 imagesc(back_slice)
+% 
+%                                 axis image
+%                                 set(gca,'Ydir','Reverse')
+% 
+%                                 set(gca,'Color','white')
+%                                 set(gca,'XTick',[])
+%                                 set(gca,'YTick',[])
+%                                 
+%                             subplot(2,2,3)
+%                             
+%                                 hist(sig_slice_thresh(:))
+%                                 
+%                                 xlim([0 1])
+%                                 
+%                                 title('Signal histogram')
+%                                 ylabel('Count')
+%                                 xlabel('Intensity')
+%                                 
+%                             subplot(2,2,4)
+%                             
+%                                 hist(back_slice(:))
+%                                 
+%                                 xlim([0 1])
+%                                 
+%                                 title('Background histogram')
+%                                 ylabel('Count')
+%                                 xlabel('Intensity')
+%                                 
+% 
+%                         colormap gray
+% 
+%                         set(gcf,'color','w')
+%                         suptitle(['P-value: ' num2str(p_value)])
+% %                         suptitle([num2str(well_idx) ' ' num2str(channel_idx) ' ' num2str(cell_idx) ' ' num2str(p_value)])
+%                         
+%                         pause
                     end
                 end
             end

@@ -46,56 +46,83 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                     
                     im_slice = cur_well_im(:,:,frame_idx,channel_idx);
                     
-                    %%% image modifications to make the Hough circle
-                    %%% detection work effectively
+%                     [~,~,outliers] = deleteoutliers(im_slice(:),0.01);
                     
-                    im_expanded = imresize(im_slice,2,'method','bicubic');
+                    im_expanded = im_slice;
 
-                    im_expanded = padarray(im_expanded,[30 30]);
+%                     im_expanded(im_expanded < min(outliers)) = 0;
                     
-                    im_expanded = bpass(im_expanded,1,31);
-                    im_expanded = convolveGaussian(im_expanded,5);
-
-                    im_expanded = im_expanded(31:end-30,31:end-30);
-%                     im_expanded = imsharpen(im_expanded);
-
-                    im_thresh = imdilate(imopen(im_expanded > 0.01,strel('disk',4)),strel('disk',0));
-
+%                     figure;imagesc(im_slice);axis image
+%                     figure;imagesc(im_expanded);axis image
+                    
+                    padsize = 25*3;
+                    
+                    im_expanded = padarray(im_expanded,[padsize padsize]);
+                    im_expanded = bpass(im_expanded,2,padsize/3);
+                    im_expanded = convolveGaussian(im_expanded,3);
+                    im_expanded = mat2gray(im_expanded);
+                    im_expanded = im_expanded(padsize+1:end-padsize,padsize+1:end-padsize);
+                    
+                    [Fout,x] = ecdf(im_expanded(:));
+                    
+                    d1 = diff(Fout)./diff(x);
+                    d2_wo_time = diff(d1)./diff(x(2:end));
+                    
+                    [b,idx,outliers] = deleteoutliers(d2_wo_time,0.01,1);
+                    
+%                     figure(108663);clf;
+%                         subplot(1,3,1)
+%                             plot(x,Fout);set(gca,'xscale','log')
+%                         subplot(1,3,2)
+%                             plot(x(2:end),d1);set(gca,'xscale','log')
+%                         subplot(1,3,3)
+%                             hold all;plot(x(3:end),d2_wo_time);set(gca,'xscale','log');plot(x(idx+3),d2_wo_time(idx+3),'o','MarkerSize',20);
+                    
+                    figure(108663);clf;
+                        subplot(1,3,1)
+                            plot(x,Fout);set(gca,'xscale','log')
+                        subplot(1,3,2)
+                            plot(x(2:end),diff(Fout)./diff(x));set(gca,'xscale','log')
+                        subplot(1,3,3)
+                            plot(x(3:end),diff(diff(Fout))./diff(x(2:end)));set(gca,'xscale','log')
+                            
+%                     figure(10893);clf;hist(im_expanded(:),100)
+                    
+                    im_thresh = imdilate(imopen(im_expanded > 0.1,strel('disk',4)),strel('disk',0));
+% 
                     im_expanded_thresholded = im_expanded;
-                    im_expanded_thresholded(im_thresh(:) == 0) = 0;
-
-                    im_expanded_thresholded = reshape(im_expanded_thresholded,size(im_expanded));
+                    im_expanded_thresholded(im_thresh==0) = 0;
                     
-                    A = fastradial(im_expanded_thresholded,10,2);
-                    A = mat2gray(bpass(A,1,5));
-                    A(A < 0.05) = 0;
+%                     figure(892948);clf;imagesc(im_expanded_thresholded);axis image;
                     
-%                     figure(1342);clf;hist(A(A~=0),100)
+%                     im_expanded_thresholded = im_expanded;
+%                     im_expanded_thresholded(im_thresh(:) == 0) = 0;
+% 
+%                     im_expanded_thresholded = reshape(im_expanded_thresholded,size(im_expanded));
+                    
+                    A = fastradial(im_expanded_thresholded,5,3);
+                    
+                    A = padarray(A,[padsize padsize]);
+                    A = bpass(A,1,5);
+                    A = A(padsize+1:end-padsize,padsize+1:end-padsize);
+                    
+                    A = mat2gray(A);
+                    
+%                     figure;imagesc(A);axis image
+                    
+                    A(A<0.01) = 0;
                     
                     centers=FastPeakFind(A,0);%, filt ,2, 1, fid)
                     
                     centers = reshape(centers,2,[])';
-                    radii = 10*ones(size(centers,1),1);
+                    radii = 5*ones(size(centers,1),1);
                     
                     if propts.cseg_debug
                         figure(12302);clf;hold all;imagesc(A);colormap gray;axis image;set(gca,'Ydir','Reverse');axis off;set(gcf,'color','w')
                         plot(centers(:,1),centers(:,2),'om','MarkerSize',20,'LineWidth',3)
                     end
                     
-                    
-                    
-                    
-
-                    % now return thresh to its original size
-                    
-                    im_thresh = imresize(im_thresh,0.5);
-                    
                     %%% remove circles not in mask
-
-                    % scale centers and radii because of resize
-                    
-                    centers = centers / 2;
-                    radii = radii / 2;
                     
                     region_map = bwlabeln(im_thresh,4);
                     objects = regionprops(region_map,'ConvexHull','Extrema','FilledImage');
@@ -150,7 +177,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                                 obj_map = zeros(size(ti));
                                 
                                 for center_idx = 1:size(temp_centers_contained_shifted,1)
-                                    obj_map(round(temp_centers_contained_shifted(center_idx,2)),round(temp_centers_contained_shifted(center_idx,1))) = 1;
+                                    obj_map(1+round(temp_centers_contained_shifted(center_idx,2)),1+round(temp_centers_contained_shifted(center_idx,1))) = 1;
                                 end
 
                                 dist_map = bwdist(~obj_map);%%imcomplement(bwdist(obj_map));
@@ -269,7 +296,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                                 hold all
 
                                 imagesc(im_expanded_thresholded)
-                                viscircles(centers*2, radii*2,'EdgeColor','b');
+                                viscircles(centers, radii,'EdgeColor','b');
 
                                 axis image
                                 set(gca,'Ydir','Reverse')
