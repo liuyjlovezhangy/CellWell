@@ -45,7 +45,12 @@ function process(options)
             im_rotate = cw.process.rotate(im,options.bf_channel);
             
             if options.ask_me
-                im_combination = [padarray(im(:,:,:,options.bf_channel),[size(im_rotate,1) - size(im,1), size(im_rotate,2) - size(im,2)],'post'), im_rotate(:,:,:,options.bf_channel)];
+                if any([size(im_rotate,1) - size(im,1), size(im_rotate,2) - size(im,2)] < 0)
+                    im_combination = [im(:,:,:,options.bf_channel), ...
+                        padarray(im_rotate(:,:,:,options.bf_channel),[size(im,1) - size(im_rotate,1), size(im,2) - size(im_rotate,2)],'post')];
+                else
+                    im_combination = [padarray(im(:,:,:,options.bf_channel),[size(im_rotate,1) - size(im,1), size(im_rotate,2) - size(im,2)],'post'), im_rotate(:,:,:,options.bf_channel)];
+                end
 
                 answer = cw.plot.confirm_results(im_combination,'Rotation results.');
 
@@ -78,11 +83,16 @@ function process(options)
         disp('Performing well segmentation...')
         
         if strcmp(propts.wseg_mode,'otsu')
+            error('dont use this well segmentation mode')
             [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_otsu( im, options );
         elseif strcmp(propts.wseg_mode,'otsu2')
+            error('dont use this well segmentation mode')
             [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_otsu2( im, options );
         elseif strcmp(propts.wseg_mode,'bandpass')
+            error('dont use this well segmentation mode')
             [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_bandpass( im, options );
+        elseif strcmp(propts.wseg_mode,'template')
+            [well_segmentation_results_struct,im_seg_final] = cw.process.segment_wells_template( im, options );
         else
             error('Unrecognized well segmentation mode.')
         end
@@ -169,6 +179,8 @@ function process(options)
 
         if strcmp(propts.cseg_mode,'simple')
         
+            error('dont use this cell segmentation mode')
+            
             [cell_segmentation_results_struct,validation_images] = cw.process.segment_cells_simple( well_tracking_results_struct, ...
                 signal_detection_results_struct, options );
 
@@ -195,14 +207,24 @@ function process(options)
             end
 
         elseif strcmp(propts.cseg_mode,'circle')
+            error('dont use this cell segmentation mode')
             cell_segmentation_results_struct = cw.process.segment_cells_circle( well_tracking_results_struct, ...
                 signal_detection_results_struct, options );
         elseif strcmp(propts.cseg_mode,'circle_bandpass')
+            error('dont use this cell segmentation mode')
             cell_segmentation_results_struct = cw.process.segment_cells_circle_bandpass( well_tracking_results_struct, ...
                 signal_detection_results_struct, options );
         elseif strcmp(propts.cseg_mode,'radial')
             cell_segmentation_results_struct = cw.process.segment_cells_radial_sym( well_tracking_results_struct, ...
                 signal_detection_results_struct, options );
+        elseif strcmp(propts.cseg_mode,'point_source')
+            error('dont use this cell segmentation mode')
+            cell_segmentation_results_struct = cw.process.segment_cells_point_source( well_tracking_results_struct, ...
+                signal_detection_results_struct, options );    
+        elseif strcmp(propts.cseg_mode,'mser')
+            error('dont use this cell segmentation mode')
+            cell_segmentation_results_struct = cw.process.segment_cells_mser( well_tracking_results_struct, ...
+                signal_detection_results_struct, options );  
         else
             error('Unknown cell segmentation mode.')
         end

@@ -1,4 +1,4 @@
-function [cell_segmentation_results_struct,validation_images] = segment_cells_radial_sym( well_tracking_results_struct, signal_detection_results_struct, options )
+function [cell_segmentation_results_struct,validation_images] = segment_cells_point_source( well_tracking_results_struct, signal_detection_results_struct, options )
     
     warning('segment_cells_radial_sym currently assumes the BF channel is the last.')
 
@@ -46,52 +46,96 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                     
                     im_slice = cur_well_im(:,:,frame_idx,channel_idx);
                     
-                    im_expanded = im_slice;
+                    noise_sz = 1;
+                    obj_sz = 10;
+    
+%                     im_slice = imclose(im_slice,strel('disk',4));
                     
-                    
-                    padsize = 0;%obj_sz*3;
-                    
-%                     im_expanded = padarray(im_expanded,[padsize padsize],NaN);
-                    im_expanded = bpass(im_expanded,noise_sz,obj_sz);
-%                     im_expanded = convolveGaussian(im_expanded,3);figure(1232);clf;imagesc(im_expanded);colormap gray;error;
-                    im_expanded = mat2gray(im_expanded);
-%                     im_expanded = im_expanded(padsize+1:end-padsize,padsize+1:end-padsize);
-                    
-                    im_thresh = imdilate(imopen(im_expanded > 0.1,strel('disk',0)),strel('disk',0));
+%                     im_slice = bpass(im_slice,noise_sz,obj_sz);
+%                     im_slice = mat2gray(im_slice);
+%                     im_slice(im_slice<0.01) = 0;
+%                     im_slice = convolveGaussian(im_slice,3);
+
+                    % set the threshold to be the kink in the histogram
+                    % which separates bnkd from signal
+                    % https://www.mathworks.com/matlabcentral/answers/57194-how-to-find-the-sharp-turn-in-a-2d-line-curve
+
+%                     data = im_slice(:);
+%                     num_bins = numel(data)^(1/2);
+%                     bin_width = (max(data(:)) - min(data(:))) / num_bins;
+%                     [hist_data,hist_loc] = histo(data,bin_width);
 % 
-                    im_expanded_thresholded = im_expanded;
-                    im_expanded_thresholded(im_thresh==0) = 0;
+%                     CDF = cumsum(hist_data); CDF = CDF / max(CDF);
+%                     
+%                     thresh = hist_loc(find(CDF>0.99,1));
                     
-%                     figure(892948);clf;imagesc(im_expanded_thresholded);axis image;
+%                     figure(13083);clf;
+%                         subplot(3,1,1);hold all;plot(hist_loc,hist_data)
+%                         subplot(3,1,2);hold all;plot(hist_loc,CDF)
+% %                         subplot(3,1,2);hold all;plot(hist_loc(1:end-1),mat2gray(hist_data_diff))
+% %                         subplot(3,1,3);hold all;plot(hist_loc(1:end-2),mat2gray(hist_data_diff2))
+%                         
+%                     
+%                     error
                     
-%                     im_expanded_thresholded = im_expanded;
-%                     im_expanded_thresholded(im_thresh(:) == 0) = 0;
+%                     im_slice(im_slice<thresh) = 0;
 % 
-%                     im_expanded_thresholded = reshape(im_expanded_thresholded,size(im_expanded));
+%                     im_thresh = im_slice > thresh;
+%                     error
                     
-                    A = fastradial(im_expanded_thresholded,[2:6],5);
+%                     figure(2033);clf;hold all;imagesc(im_thresh);colormap gray;axis image;
+
+%                     error
                     
-                    %A = padarray(A,[padsize padsize],NaN);
-                    %A = bpass(A,1,5);
-                    %A = A(padsize+1:end-padsize,padsize+1:end-padsize);
+                    sigma = 2;
                     
-                    A = mat2gray(A);
-                    A = imadjust(A,[median(A(:)) 1],[],0.3);
+                    [pstruct, im_thresh, imgLM, imgLoG] = pointSourceDetection(im_slice, sigma, 'Alpha', 0.1,'WindowSize',2*sigma,...
+                        'RedundancyRadius',5);%,'mask',im_thresh);
                     
-%                     figure;imagesc(A);axis image
+                    imgLoG = mat2gray(imgLoG);
                     
-                    %A(A<0.01) = 0;
+                    imgLoG = imcomplement(imgLoG);
                     
-                    filt = (fspecial('gaussian', 5,0.5));
+                    imgLoG_ac = activecontour(imgLoG,imdilate(im_thresh,strel('disk',3)),20); 
+%                     imgLoG_ac = imcomplement(imgLoG_ac);
                     
-                    centers=FastPeakFind(A,0,filt,2);%, filt ,2, 1, fid)
+                    figure(03894);
+                    clf
+                    subplot(1,2,1);hold all;imagesc(imgLoG);colormap gray;axis image
+                    subplot(1,2,2);hold all;imagesc(imgLoG_ac);colormap gray;axis image
                     
-                    centers = reshape(centers,2,[])';
+                    
+%                     error
+                    
+                    im_slice(imgLM>0) = 0;    
+                    imgLoG(imgLM>0) = 0;   
+                    imgLM(imgLM>0) = 1;
+
+                    comp_im = cat(3,imgLM,im_slice,zeros(size(im_slice)));
+                    comp_im_log = cat(3,imgLM,imgLoG,zeros(size(im_slice)));
+
+                    frame_idx
+                    channel_idx
+                    
+                    figure(1033);clf;hold all;imagesc(im_slice);colormap gray;axis image;if ~isempty(pstruct);plot(pstruct.x,pstruct.y,'mo','MarkerSize',20);end;
+                    figure(1034);clf;hold all;imagesc(im_thresh);colormap gray;axis image;if ~isempty(pstruct);plot(pstruct.x,pstruct.y,'mo','MarkerSize',20);end;
+                    figure(1035);clf;hold all;imagesc(comp_im);colormap gray;axis image;if ~isempty(pstruct);plot(pstruct.x,pstruct.y,'mo','MarkerSize',20);end;
+                    figure(1036);clf;hold all;imagesc(comp_im_log);colormap gray;axis image;if ~isempty(pstruct);plot(pstruct.x,pstruct.y,'mo','MarkerSize',20);end;
+%                     
+%                     pstruct
+                    if ~isempty(pstruct)
+                        centers = [pstruct.x', pstruct.y'];
+                    else
+                        centers = [];
+                    end
+                    
                     radii = 5*ones(size(centers,1),1);
                     
                     if propts.cseg_debug
-                        figure(12302);clf;hold all;imagesc(A);colormap gray;axis image;set(gca,'Ydir','Reverse');axis off;set(gcf,'color','w')
-                        plot(centers(:,1),centers(:,2),'om','MarkerSize',20,'LineWidth',3)
+%                         figure(12302);clf;hold all;imagesc(imgLoG);colormap gray;axis image;set(gca,'Ydir','Reverse');axis off;set(gcf,'color','w')
+%                         if ~isempty(centers)
+%                             plot(centers(:,1),centers(:,2),'om','MarkerSize',20,'LineWidth',3)
+%                         end
                     end
                     
                     %%% remove circles not in mask
@@ -251,20 +295,34 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
 
                                 freezeColors
 
-                            subtightplot(2,3,2)
-                                hold all
-
-                                imagesc(im_expanded)
-
-                                axis image
-                                set(gca,'Ydir','Reverse')
-                                axis off 
-
-                                colormap gray
+%                             subtightplot(2,3,2)
+%                                 hold all
+% 
+%                                 imagesc(im_expanded)
+% 
+%                                 axis image
+%                                 set(gca,'Ydir','Reverse')
+%                                 axis off 
+% 
+%                                 colormap gray
 
                                 freezeColors
 
-                            subtightplot(2,3,3)
+%                             subtightplot(2,3,3)
+%                                 hold all
+% 
+%                                 imagesc(im_expanded_thresholded)
+%                                 viscircles(centers, radii,'EdgeColor','b');
+% 
+%                                 axis image
+%                                 set(gca,'Ydir','Reverse')
+%                                 axis off 
+% 
+%                                 colormap gray
+% 
+%                                 freezeColors
+
+                            subtightplot(2,3,4)
                                 hold all
 
                                 imagesc(im_thresh)
@@ -276,22 +334,6 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                                 colormap gray
 
                                 freezeColors
-                                
-                            subtightplot(2,3,4)
-                                hold all
-
-                                imagesc(im_expanded_thresholded)
-                                viscircles(centers, radii,'EdgeColor','b');
-
-                                axis image
-                                set(gca,'Ydir','Reverse')
-                                axis off 
-
-                                colormap gray
-
-                                freezeColors
-
-                            
 
                             subtightplot(2,3,5)
                                 hold all
@@ -373,5 +415,5 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
     
     multiWaitbar('CloseAll');
     drawnow
-%     error
+
 end

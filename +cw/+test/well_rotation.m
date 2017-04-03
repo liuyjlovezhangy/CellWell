@@ -8,6 +8,8 @@ function well_rotation
     I_rot_fft = imrotate(I,-angle_fft);
     I_rot_h = imrotate(I,-angle_h);
     
+    imwrite(I_rot_h,'rotated_wells_corrected.tif')
+    
     num_otsu_levels = 2;
     
     [IDX,sep,well_segmentation_results_struct.otsu_idcs] = otsu(I,num_otsu_levels);

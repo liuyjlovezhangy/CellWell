@@ -70,7 +70,7 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
                 % change channel brightnesses
                 
                 for channel_idx = 1:size(well_scaled,3)
-                    well_scaled(:,:,channel_idx) = imadjust(well_scaled(:,:,channel_idx),stretchlim(well_scaled(:,:,channel_idx),[0.25,1]),[],1.3);
+                    well_scaled(:,:,channel_idx) = imadjust(well_scaled(:,:,channel_idx),stretchlim(well_scaled(:,:,channel_idx),[0.25,1]),[],2);
 
 
                     padsize = 70*5;
@@ -88,7 +88,7 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
 
 %                     well_scaled(:,:,channel_idx) = well_tmp;
                     
-                    well_scaled(:,:,channel_idx) = mat2gray(well_scaled(:,:,channel_idx));
+                    %well_scaled(:,:,channel_idx) = mat2gray(well_scaled(:,:,channel_idx));
                 end
                 
                 well_scaled(:,:,options.signal_channels) = 0;
@@ -142,36 +142,42 @@ function cell_overlays(wells, signal_detection_results_struct, cell_segmentation
         ylim([1, size(cur_slice,1)])
         
         if image_mode == 1
-%             cmap = [0 0 0;1,0,0;0,1,0;0,0,1;1,0,1];
-            cmap = [0 0 0;1,0,0;0,1,0;0,0,1];
+            cmap = [0 0 0;1,0,0;0,1,0;0,0,1;1,0,1];
+%             cmap = [0 0 0;1,0,0;0,1,0;0,0,1];
             
-            combined_layers = zeros(size(cur_slice,1),size(cur_slice,2),size(cur_slice,3));
-            combined_layers(:,:,1) = 1;
+%             combined_layers = zeros(size(cur_slice,1),size(cur_slice,2),size(cur_slice,3));
+%             size(combined_layers)
+%             combined_layers(:,:,1) = 1;
             
             border_layer = zeros(size(cur_slice,1),size(cur_slice,2));
-            objects_layer = zeros(size(cur_slice,1),size(cur_slice,2),size(cur_slice,3));
+            objects_layer = zeros(size(cur_slice,1),size(cur_slice,2),numel(options.cell_channels));
             
-            for channel_box_idx = options.cell_channels
-                layer = cur_slice(:,:,channel_box_idx);          
+            %%%% ASSUME TWO CELL CHANNELS
+            
+            for channel_box_idx = 1:numel(options.cell_channels)
+                layer = cur_slice(:,:,options.cell_channels(channel_box_idx));       
                 
                 border_layer(layer == 1) = 1;
-                objects_layer(:,:,channel_box_idx) = layer > 1;
+                objects_layer(:,:,channel_box_idx) = (layer > 1) * channel_box_idx;
                 
             end
             
-            for channel_box_idx = options.cell_channels
-                combined_layers(:,:,channel_box_idx) = (channel_box_idx - options.cell_channels(1) + 1)*objects_layer(:,:,channel_box_idx);
-            end
+%             for channel_box_idx = 2:1+options.cell_channels
+%                 combined_layers(:,:,channel_box_idx) = (channel_box_idx - options.cell_channels(1) + 1)*objects_layer(:,:,channel_box_idx);
+%             end
             
-            combined_layers = sum(combined_layers,3);
+            combined_layers = 1 + sum(objects_layer,3);
 
             combined_layers(logical(border_layer)) = 0;
+%             combined_layers
             
             rgb = label2rgb(combined_layers,cmap, [.7 .7 .7]);
             imshow(rgb)
+%             error
 
         else
-            img = cur_slice(:,:,[options.cell_channels,options.signal_channels]);%cat(3,cur_slice(:,:,[options.cell_channels]),zeros(size(cur_slice,1),size(cur_slice,2)));
+            %img = cur_slice(:,:,[options.cell_channels,options.signal_channels]);
+            img = cat(3,cur_slice(:,:,[options.cell_channels]),zeros(size(cur_slice,1),size(cur_slice,2)));
             
             imagesc(img)
         end

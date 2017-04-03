@@ -1,41 +1,54 @@
-function one_cell_cfg
+function nuclei_cfg
 
-    options.filename = 'movies/CARTonly_125um_SMALL.tif';
+    options.filename = 'movies/Farid_test-02(1)_NEW.tif';
+    
+    movie_name = strrep(options.filename,'/','__');
     
     %%% RUNNING MODE
     
     options.DO_PROCESSING = 0;
-    options.DO_ANALYSIS = 0;
-    options.DO_PLOTTING = 1;
+    options.DO_ANALYSIS = 1;
+    options.DO_PLOTTING = 0;
     
     options.NUKE_IT = 0; %%% DESTROY ALL OLD OUTPUT DATA/MOVIES INCL OLD RUNS
     options.NUKE_WARN = 0; %%% Pops up a box every time when run with NUKE_IT=1 to ask
     
     options.ask_me = 1; %%% Ask user if the results look good after registration, segmentation, etc.
     
-    options.last_frame = 5; %%% Only process through <n> frames
+    options.first_frame = 1;
+    options.last_frame = 40; %%% Only process through <n> frames
     
     %%% Info related to movie
     
     options.pixel_size = 1/0.75; % microns per pixel
-    options.time_step = 5*60; % Number of seconds per frame
+    options.time_step = 3*60; % Number of seconds per frame
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% CHANGE THESE PER MOVIE SETUP
+    
+    %%% ONE SIGNAL CHANNEL, TWO CELL CHANNELS, 75 um WELLS
     
     % Movie channel setup
     
     options.signal_channels = [];
-    options.cell_channels = 1;
-    options.tracking_channels = 1;
-    options.bf_channel = 2;
+    options.cell_channels = [1 2];
+    options.nuclei_channel = [];
+    options.tracking_channels = [1 2];
+    options.bf_channel = 4;
     
-    options.channel_labels = {'(CAR)T cell','Brightfield'};
+    options.channel_labels = {'T cell','Target','Nuclei','Brightfield'};
     
     % Plate / well setup
     
-    options.well_counts = [4,4];
-    options.well_width = 97;
-    options.well_spacing_width = 14;
-    options.well_height = 98;
-    options.well_spacing_height = 13;
+    options.well_counts = [6,6]; % #rows x #cols
+    options.well_width = 69;
+    options.well_spacing_width = 4;
+    options.well_height = 72;
+    options.well_spacing_height = 2;
+    
+    % cell information
+    
+    options.interaction_tolerance = 6; % how many pixels apart cell edges can be to consider them interacting
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,13 +60,13 @@ function one_cell_cfg
     %%% What part of the processing would you like to start from?
     % Uncomment the line you are interested in (and comment out others)
     
-%     processing_options.start_at = 0;
+%      processing_options.start_at = 0;
 %     processing_options.start_at = 'well segmentation';
 %     processing_options.start_at = 'well tracking';
 %     processing_options.start_at = 'noise detection';
-%     processing_options.start_at = 'cell segmentation';
+    processing_options.start_at = 'cell segmentation';
 %     processing_options.start_at = 'cell tracking';
-    processing_options.start_at = 'next';
+%     processing_options.start_at = 'next';
     
     %%% Movie modifications
     
@@ -61,16 +74,22 @@ function one_cell_cfg
     processing_options.rotate = 1;
 
     %%% Well segmentation mode
-
-%     processing_options.wseg_mode = 'otsu'; %%% !%!@#!@ BROKEN
-    processing_options.wseg_mode = 'edge';
+    
+    processing_options.wseg_debug = 0;
+    processing_options.wseg_mode = 'template';
+    processing_options.wseg_template = 'well_templates/wt_default.tif';
+    processing_options.wseg_left_offset = 5;
+    processing_options.wseg_top_offset = 5;
     
     %%% Cell segmentation mode
     
-    processing_options.debug_seg = 0;
+    processing_options.cseg_debug = 0;
+    processing_options.cseg_mode = 'radial';
     
-%     processing_options.cseg_mode = 'simple'; %%% !%!@#!@ BROKEN
-    processing_options.cseg_mode = 'circle';
+    %%% Cell object cleanup
+    %%% What is the minimum area of a cell object, etc.
+    
+    processing_options.cseg_min_area = 0;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,11 +111,15 @@ function one_cell_cfg
     plot_options.well_tracks = 0;
     plot_options.well_by_well = 0;
     plot_options.noise_detection = 0;
-    plot_options.cell_segmentation = 1;
-    plot_options.cell_tracking = 0; % cell tracking also plots cell segmentation.
-    plot_options.cell_overlay = 0;
+    plot_options.cell_segmentation = 0; % BROKEN FOR RADIAL
+    plot_options.cell_tracking = 0; % BROKEN FOR RADIAL cell tracking also plots cell segmentation.
+    plot_options.cell_overlay = 1;
     
     plot_options.make_movies = 1;
+    
+    %%% Define what wells are "interesting" for plotting
+    
+    plot_options.min_cells = [0 0 0]; % how many cells necessary in channel 1, 2, ...
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,23 +131,12 @@ function one_cell_cfg
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Well segmentation parameters
     
-    %%% OTSU WELL THRESHOLDING
-    % THESE OPTIONS ARE FOR THE ORIGINAL (FAST BUT NOT ROBUST) SEGMENTATION
-    % ~~~@~!@~!@~!@!~ this is currently broken after I made the other ver.
-
-    processing_options.wseg_otsu_close_size = 10;
-    processing_options.wseg_otsu_min_size = 2000;
-    processing_options.wseg_otsu_num_otsu_levels = 62;
     
-    %%% EDGE-DETECTION WELL THRESHOLDING
-    % THESE OPTIONS ARE FOR NEW (SLOW BUT ROBUST [ideally...]) SEGMENTATION
-    
-    warning('well segmentation based on edge does not have user specifiable parameters yet')
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Noise detection parameters
     
-    processing_options.ndec_thresh_mean = 1;
+    processing_options.ndec_thresh_mean = 2;
     processing_options.ndec_thresh_stdev = 0.5;
     processing_options.ndec_do_wiener = 1;
     processing_options.ndec_do_blur = 1;
@@ -137,25 +149,12 @@ function one_cell_cfg
     
     %%% GENERAL THRESHOLDING OPTIONS
     
-    processing_options.cseg_adaptive_thresh_scale = 1.5;
+    processing_options.cseg_adaptive_thresh_scale = 0.6;
     processing_options.cseg_tracking_params.threshold_density = 0.1;
     processing_options.cseg_tracking_params.peak_stringency = 'low';
     processing_options.cseg_tracking_params.threshold_smoothing = 'off';
     
-    processing_options.cseg_min_cell_area = 10;   
-    
-    %%% SIMPLE THRESHOLDING
-    
-    processing_options.cseg_simple_watershedding = 1;
-    processing_options.cseg_simple_water_method = 'dist'; 
-%     processing_options.cseg_simple_water_method = 'intensity'; 
-    
-    processing_options.cseg_simple_close_radius = 1;
-    processing_options.cseg_simple_open_radius = 2;
-    
-    %%% HOUGH CIRCLE THRESHOLDING
-    
-    warning('No options for Hough circle detection implemented yet.')
+    processing_options.cseg_min_cell_area = 20;   
     
     %%% Cell tracking parameters
     
@@ -176,6 +175,6 @@ function one_cell_cfg
     options.analysis_options = analysis_options;
     options.plot_options = plot_options;
     
-    save('one_cell_cfg.mat','options')
+    save([movie_name '_cfg.mat'],'options')
 
 end

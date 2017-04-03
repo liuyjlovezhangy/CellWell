@@ -2,6 +2,25 @@ function [ output_args ] = test_tm( input_args )
 %TEST_TM Summary of this function goes here
 %   Detailed explanation goes here
 
+  % Find maximum response
+   I = im2double(imread('lena.jpg'));
+  % Template of Eye Lena
+   T=I(124:140,124:140,:);
+  % Calculate SSD and NCC between Template and Image
+   [I_SSD,I_NCC]=template_matching(T,I);
+  % Find maximum correspondence in I_SDD image
+   [x,y]=find(I_SSD==max(I_SSD(:)));
+   [x,y]=find(I_NCC==max(I_NCC(:)));
+   
+  % Show result
+   figure, 
+   subplot(2,2,1), imshow(I); hold on; plot(y,x,'r*'); title('Result')
+   subplot(2,2,2), imshow(T); title('The eye template');
+   subplot(2,2,3), imshow(I_SSD); title('SSD Matching');
+   subplot(2,2,4), imshow(I_NCC); title('Normalized-CC');
+
+return
+
     % Find maximum response
     I = im2double(imread('big_img.tif'));
     % Template of Eye Lena
