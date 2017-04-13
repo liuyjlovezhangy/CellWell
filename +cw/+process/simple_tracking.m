@@ -122,6 +122,7 @@ function [trajectories,obj_ids] = simple_tracking( molarray, link_params )
             if ~isfield(link_params,'min_track_len')
                 min_track_len = 1;
             else
+                disp hi
                 min_track_len = link_params.min_track_len;
             end
 

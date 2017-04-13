@@ -258,7 +258,7 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
     
     warning('interaction_results: hack where it assumes 2 cell channels')
     
-    unique_interaction_counts = zeros(num_wells, 3, 5); % the last is how many histogram bars we'll have
+    unique_interaction_counts = zeros(num_wells, 3); % the last is how many histogram bars we'll have
     taulist = cell(1,3);
     
     % wells where there are no <x> cells should not contribute to histogram
@@ -280,49 +280,56 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
         end
     end
     
+    channel_offset = options.cell_channels(1) - 1;
+    
     for well_idx = 1:num_wells
         well_interactions = cell_interaction_results_struct.interactions{well_idx};
         
         for interaction_idx = 1:numel(well_interactions)
             int = well_interactions(interaction_idx);
             
-            A = int.interacting_flag;
-            B = [0 A 0];
+%             A = int.interacting_flag;
+%             B = [0 A 0];
             
             % how many unique interactions for these two cells
-            changes = B(2:end) - B(1:end-1);
-            UIC_count_idx = sum(changes == -1) + 1;
+%             changes = B(2:end) - B(1:end-1)
+%             UIC_count_idx = sum(changes == -1) + 1
+%             
+%             
+%             
+%             if UIC_count_idx >= size(unique_interaction_counts,3)
+%                 UIC_count_idx = size(unique_interaction_counts,3);
+%             end
+%             
             
-            if UIC_count_idx >= size(unique_interaction_counts,3)
-                UIC_count_idx = size(unique_interaction_counts,3);
-            end
-            
-            channel_offset = options.cell_channels(1) - 1;
-            
+%             
             if int.channel1 == int.channel2
                 UIC_col = int.channel1 - channel_offset;
             else
                 UIC_col = 3;
             end
-            
-            unique_interaction_counts(well_idx, UIC_col, UIC_count_idx) = unique_interaction_counts(well_idx, UIC_col, UIC_count_idx) + 1;
+%             
+%             unique_interaction_counts(well_idx, UIC_col, UIC_count_idx) = unique_interaction_counts(well_idx, UIC_col, UIC_count_idx) + 1;
             
             % how long did each interaction last?
             
             % Find transition points (this is from HMM-Bayes analysis)
+            num_frames = numel(int.interacting_flag);
             
             transpoints = find(int.interacting_flag(2:end) - int.interacting_flag(1:end-1));
             
             cur_idx = 1;
 
+            tl = [];
+            
             for i = 1:numel(transpoints)
                 state = int.interacting_flag(transpoints(i));
                 
                 if state
                     if i == 1
-                        taulist{UIC_col} = [taulist{UIC_col}, transpoints(i)-cur_idx+1];
+                        tl = [tl, transpoints(i)-cur_idx+1];
                     else
-                        taulist{UIC_col} = [taulist{UIC_col}, transpoints(i)-cur_idx];
+                        tl = [tl, transpoints(i)-cur_idx];
                     end
                 end
 
@@ -334,45 +341,59 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
             state = int.interacting_flag(end);
             
             if state
-                taulist{UIC_col} = [taulist{UIC_col}, numel(int.interacting_flag)-cur_idx];
+                tl = [tl, numel(int.interacting_flag)-cur_idx];
             end
+            
+            tl(tl < 2) = [];
+            
+            unique_interaction_counts(well_idx, UIC_col) = unique_interaction_counts(well_idx, UIC_col) + numel(tl);
+            
+            taulist{UIC_col} = [taulist{UIC_col}, tl];
 
             if any(taulist{UIC_col} == 0)
-                error
+%                 error
             end
         end
     end
+    taulist{1}
+    taulist{2}
+    taulist{3}
+%     unique_interaction_counts
+%     UIC_hist_loc = 0:size(unique_interaction_counts,3)-1;
+    UIC_hist_loc = 0:4;
     
-    UIC_hist_loc = 0:size(unique_interaction_counts,3)-1;
+    histos = zeros(3,numel(UIC_hist_loc));
     
+    for hist_idx = 1:size(histos,1)
+        cur_UIC = unique_interaction_counts(:,hist_idx);
+        cur_UIC(isnan(cur_UIC)) = [];
+        
+        histos(hist_idx,1:end-1) = hist1( cur_UIC, UIC_hist_loc(1:end-1) );
+        histos(hist_idx,end) = sum(cur_UIC > UIC_hist_loc(end-1));
+    end
+    
+%    histos
+
     comb_string = [options.channel_labels{options.cell_channels(1)} ' <-> ' options.channel_labels{options.cell_channels(2)} ' interaction'];
     
-    UIC_frac_1 = squeeze(unique_interaction_counts(:,1,:)) ./ repmat(sum(squeeze(unique_interaction_counts(:,1,:)),2),[1,size(unique_interaction_counts,3)]);
-    UIC_frac_2 = squeeze(unique_interaction_counts(:,2,:)) ./ repmat(sum(squeeze(unique_interaction_counts(:,2,:)),2),[1,size(unique_interaction_counts,3)]);
-    UIC_frac_3 = squeeze(unique_interaction_counts(:,3,:)) ./ repmat(sum(squeeze(unique_interaction_counts(:,3,:)),2),[1,size(unique_interaction_counts,3)]);
-    
-    figure(134287)
+    figure(155287)
     clf
         subplot(1,3,1)
             hold all
-
-%             errorbar(UIC_hist_loc,nanmean(UIC_frac_1,1),nanstd(UIC_frac_1,0,1),'.-','Color','r','LineWidth',3,'MarkerSize',40)
-%             errorbar(UIC_hist_loc,nanmean(UIC_frac_2,1),nanstd(UIC_frac_2,0,1),'.-','Color','g','LineWidth',3,'MarkerSize',40)
-%             errorbar(UIC_hist_loc,nanmean(UIC_frac_3,1),nanstd(UIC_frac_3,0,1),'.-','Color','b','LineWidth',3,'MarkerSize',40)
-
-            plot(UIC_hist_loc,nanmean(UIC_frac_1,1),'.-','Color','r','LineWidth',3,'MarkerSize',40)
-            plot(UIC_hist_loc,nanmean(UIC_frac_2,1),'.-','Color','g','LineWidth',3,'MarkerSize',40)
-            plot(UIC_hist_loc,nanmean(UIC_frac_3,1),'.-','Color','b','LineWidth',3,'MarkerSize',40)
+            
+            plot(UIC_hist_loc,histos(1,:)','.-','Color','r','LineWidth',3,'MarkerSize',40)
+            plot(UIC_hist_loc,histos(2,:)','.-','Color','g','LineWidth',3,'MarkerSize',40)
+            plot(UIC_hist_loc,histos(3,:)','.-','Color','b','LineWidth',3,'MarkerSize',40)
 
             xl = xlim;
             yl = ylim;
             
-            xlim([-0.5, 5.5])
-            ylim([0, 1])
+            xlim([-0.5, UIC_hist_loc(end)+0.5])
+%             ylim([0, 1])
             
-            xlabel('Number of unique interactions')
-            ylabel('Fraction of total interactions')
-            title('Number of unique cell-cell interactions found per well')
+            xlabel('Number of contacts')
+            ylabel('Fraction of cells')
+%             title('Number of unique cell-cell interactions found per well')
             
             box on
             grid on
@@ -380,19 +401,19 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
         subplot(1,3,2)
             hold all
 
-            bar(1, mean(taulist{1}), 'facecolor', 'r'); 
-            bar(2, mean(taulist{2}), 'facecolor', 'g'); 
-            bar(3, mean(taulist{3}), 'facecolor', 'b');
+            bar(1, mean(taulist{1})/num_frames, 'facecolor', 'r'); 
+            bar(2, mean(taulist{2})/num_frames, 'facecolor', 'g'); 
+            bar(3, mean(taulist{3})/num_frames, 'facecolor', 'b');
             
-            errorbar(1, mean(taulist{1}), std(taulist{1}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
-            errorbar(2, mean(taulist{2}), std(taulist{2}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
-            errorbar(3, mean(taulist{3}), std(taulist{3}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
+%             errorbar(1, mean(taulist{1}), std(taulist{1}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
+%             errorbar(2, mean(taulist{2}), std(taulist{2}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
+%             errorbar(3, mean(taulist{3}), std(taulist{3}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
             
 %             sigstar(NSPF_groups,NSPF_p_values);
             
-            title('Average lifetime of interaction')
-            ylabel('Lifetime (frames)')
-            xlabel('Cell type / interaction')
+%             title('Average lifetime of interaction')
+            ylabel('Fraction of cells')
+            xlabel('Fraction of time in conjugation')
 
             yl = ylim;
             ylim([0, yl(2)])
@@ -418,6 +439,84 @@ function interaction_results(cell_tracking_results_struct, cell_interaction_resu
     set(findall(gcf,'type','text'),'fontSize',16,'fontWeight','bold')
     set(findall(gcf,'type','axes'),'fontSize',16,'fontWeight','bold','LineWidth',5)
     set(gcf, 'color', 'white')
+    
+    return
+    
+%     UIC_hist_loc = 0:size(unique_interaction_counts,3)-1;
+%     
+%     comb_string = [options.channel_labels{options.cell_channels(1)} ' <-> ' options.channel_labels{options.cell_channels(2)} ' interaction'];
+%     
+%     UIC_frac_1 = squeeze(unique_interaction_counts(:,1,:)) ./ repmat(sum(squeeze(unique_interaction_counts(:,1,:)),2),[1,size(unique_interaction_counts,3)]);
+%     UIC_frac_2 = squeeze(unique_interaction_counts(:,2,:)) ./ repmat(sum(squeeze(unique_interaction_counts(:,2,:)),2),[1,size(unique_interaction_counts,3)]);
+%     UIC_frac_3 = squeeze(unique_interaction_counts(:,3,:)) ./ repmat(sum(squeeze(unique_interaction_counts(:,3,:)),2),[1,size(unique_interaction_counts,3)]);
+%     
+%     figure(134287)
+%     clf
+%         subplot(1,3,1)
+%             hold all
+% 
+% %             errorbar(UIC_hist_loc,nanmean(UIC_frac_1,1),nanstd(UIC_frac_1,0,1),'.-','Color','r','LineWidth',3,'MarkerSize',40)
+% %             errorbar(UIC_hist_loc,nanmean(UIC_frac_2,1),nanstd(UIC_frac_2,0,1),'.-','Color','g','LineWidth',3,'MarkerSize',40)
+% %             errorbar(UIC_hist_loc,nanmean(UIC_frac_3,1),nanstd(UIC_frac_3,0,1),'.-','Color','b','LineWidth',3,'MarkerSize',40)
+% 
+%             plot(UIC_hist_loc,nanmean(UIC_frac_1,1),'.-','Color','r','LineWidth',3,'MarkerSize',40)
+%             plot(UIC_hist_loc,nanmean(UIC_frac_2,1),'.-','Color','g','LineWidth',3,'MarkerSize',40)
+%             plot(UIC_hist_loc,nanmean(UIC_frac_3,1),'.-','Color','b','LineWidth',3,'MarkerSize',40)
+% 
+%             xl = xlim;
+%             yl = ylim;
+%             
+%             xlim([-0.5, 5.5])
+%             ylim([0, 1])
+%             
+%             xlabel('Number of contacts')
+%             ylabel('Fraction of cells')
+% %             title('Number of unique cell-cell interactions found per well')
+%             
+%             box on
+%             grid on
+%             
+%         subplot(1,3,2)
+%             hold all
+% 
+%             bar(1, mean(taulist{1}), 'facecolor', 'r'); 
+%             bar(2, mean(taulist{2}), 'facecolor', 'g'); 
+%             bar(3, mean(taulist{3}), 'facecolor', 'b');
+%             
+%             errorbar(1, mean(taulist{1}), std(taulist{1}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
+%             errorbar(2, mean(taulist{2}), std(taulist{2}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
+%             errorbar(3, mean(taulist{3}), std(taulist{3}), 'k', 'LineWidth',5)%, 'linestyle', 'none');
+%             
+% %             sigstar(NSPF_groups,NSPF_p_values);
+%             
+% %             title('Average lifetime of interaction')
+%             ylabel('Fraction of cells')
+%             xlabel('Fraction of time in conjugation')
+% 
+%             yl = ylim;
+%             ylim([0, yl(2)])
+% 
+%             set(gca,'XTick',1:3)
+%             set(gca,'XTickLabel','')
+%             
+%         subplot(1,3,3)
+%             hold all
+%             
+%             plot(-1,-1,'.-','Color','r','LineWidth',3,'MarkerSize',40)
+%             plot(-1,-1,'.-','Color','g','LineWidth',3,'MarkerSize',40)
+%             plot(-1,-1,'.-','Color','b','LineWidth',3,'MarkerSize',40)
+%             
+%             xlim([0 1])
+%             ylim([0 1])
+%             axis off
+%             
+%             legend([options.channel_labels(options.cell_channels), {comb_string}])
+%         
+% %     suptitle('Cell-cell interaction statistics')
+%             
+%     set(findall(gcf,'type','text'),'fontSize',16,'fontWeight','bold')
+%     set(findall(gcf,'type','axes'),'fontSize',16,'fontWeight','bold','LineWidth',5)
+%     set(gcf, 'color', 'white')
 end
 
 function cell_location_distributions(cell_tracking_results_struct,options)

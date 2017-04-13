@@ -65,7 +65,7 @@ function process(options)
         % Save movie to .mat for quicker access times
         
         disp('Saving input movie to .mat...')
-        save([full_filename '__analysis_results/input_movie.mat'],'im')
+        save([full_filename '__analysis_results/input_movie.mat'],'im','-v7.3')
         
     else
         disp('Loading movie from mat...')
