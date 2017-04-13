@@ -125,7 +125,17 @@ function process(options)
         
     well_tracking_results_struct = cw.process.track_wells( im, well_segmentation_results_struct, options );
     
-    
+    if options.export_tifs
+        disp('Writing well tifs...')
+        
+        for well_idx = 1:numel(well_tracking_results_struct.wells)
+            well_idx
+            
+            im = well_tracking_results_struct.wells(well_idx).im_well;
+            
+            zwriteim([full_filename '__analysis_results/well_im_' num2str(well_idx)],im);
+        end
+    end
     
 %     if propts.start_at <= 2 || ~exist([full_filename '__analysis_results/well_tracking.mat'],'file')
 %     
@@ -244,6 +254,23 @@ function process(options)
         
     end
 
+    if options.export_tifs
+        disp('Writing cell segmentation tifs...')
+        
+        cell_masks = cell_segmentation_results_struct.cell_masks;
+        
+        for well_idx = 1:numel(cell_masks)
+            well_idx
+            
+            cur_mask = cell_masks{well_idx};
+            cur_mask(:,:,:,options.bf_channel) = [];
+            
+            zwriteim([full_filename '__analysis_results/cell_seg_im_' num2str(well_idx)],cur_mask);
+        end
+    end
+    
+    
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Cell tracking
     
