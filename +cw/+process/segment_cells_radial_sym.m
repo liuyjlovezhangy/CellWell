@@ -49,7 +49,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                     im_expanded = im_slice;
                     
                     
-                    padsize = 0;%obj_sz*3;
+%                     padsize = 0;%obj_sz*3;
                     
 %                     im_expanded = padarray(im_expanded,[padsize padsize],NaN);
                     im_expanded = bpass(im_expanded,noise_sz,obj_sz);
@@ -82,7 +82,7 @@ function [cell_segmentation_results_struct,validation_images] = segment_cells_ra
                     
                     %A(A<0.01) = 0;
                     
-                    filt = (fspecial('gaussian', 5,0.5));
+                    filt = (fspecial('gaussian', 5,2));
                     
                     centers=FastPeakFind(A,0,filt,2);%, filt ,2, 1, fid)
                     

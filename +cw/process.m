@@ -128,6 +128,8 @@ function process(options)
     if options.export_tifs
         disp('Writing well tifs...')
         
+        delete([full_filename '__analysis_results/well_im_*'])
+        
         for well_idx = 1:numel(well_tracking_results_struct.wells)
             well_idx
             
@@ -257,19 +259,20 @@ function process(options)
     if options.export_tifs
         disp('Writing cell segmentation tifs...')
         
+        delete([full_filename '__analysis_results/cell_seg_im_*'])
+        
         cell_masks = cell_segmentation_results_struct.cell_masks;
         
         for well_idx = 1:numel(cell_masks)
             well_idx
             
-            cur_mask = cell_masks{well_idx};
-            cur_mask(:,:,:,options.bf_channel) = [];
+            im_well = mat4D_to_gray(well_tracking_results_struct.wells(well_idx).im_well);
+            cur_mask = mat4D_to_gray(cell_masks{well_idx});
+%             cur_mask(:,:,:,options.bf_channel) = [];
             
-            zwriteim([full_filename '__analysis_results/cell_seg_im_' num2str(well_idx)],cur_mask);
+            zwriteim([full_filename '__analysis_results/cell_seg_im_' num2str(well_idx)],[im_well,cur_mask]);
         end
     end
-    
-    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Cell tracking
@@ -290,6 +293,45 @@ function process(options)
         cell_tracking_results_struct = importdata([full_filename '__analysis_results/cell_tracking.mat']);
     end
     
+%     delete([full_filename '__analysis_results/cell_tracks_well_*.csv'])
+%     
+%     for cell_channel_idx = 1:numel(options.tracking_channels)
+%         
+%         cur_tracks = cell_tracking_results_struct.cell_tracks(:,options.tracking_channels(cell_channel_idx));
+%         
+%         for well_idx = 1:numel(cur_tracks)
+%             cur_cell = cur_tracks{well_idx};
+%             
+%             M = cur_cell;
+%             if ~isempty(M)
+%                 M = cellfun(@transpose,M,'UniformOutput',false);
+%             
+%                 num_tracks = numel(M);
+%                 
+%                 % make headers
+%                 
+%                 header = {};
+%                 
+%                 for track_idx = 1:num_tracks
+% %                     header = [header, ['track_' num2str(track_idx) '_X']];
+% %                     header = [header, ['track_' num2str(track_idx) '_Y']];
+%                     
+%                     header = [header, ['track_' num2str(track_idx)]];
+%                 end
+%                 
+%                 M = [header;M]
+%                 
+% %                 dlmwrite([full_filename '__analysis_results/cell_tracks_well_' num2str(well_idx) '_channel_' num2str(options.tracking_channels(cell_channel_idx)) '.csv'],header,',');
+% %                 
+% %                 dlmwrite([full_filename '__analysis_results/cell_tracks_well_' num2str(well_idx) '_channel_' num2str(options.tracking_channels(cell_channel_idx)) '.csv'],M,'-append','delimiter',',');
+%                 
+%                 dlmcell([full_filename '__analysis_results/cell_tracks_well_' num2str(well_idx) '_channel_' num2str(options.tracking_channels(cell_channel_idx)) '.csv'],M,'delimiter',',');
+%             end
+%         end
+%     end
+%     
+%     return
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Interaction detection
     
@@ -308,6 +350,8 @@ function process(options)
         
         cell_interaction_results_struct = importdata([full_filename '__analysis_results/cell_interactions.mat']);
     end
+    
+    return
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Cell death detection
