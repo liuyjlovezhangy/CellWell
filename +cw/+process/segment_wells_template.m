@@ -121,7 +121,7 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(
             center_avg_list = [center_avg_list; mean(selected_centers,1)];
         end
         
-        if options.processing_options.wseg_debug
+        if 0 && options.processing_options.wseg_debug
         
             figure(13424);
                 clf
@@ -169,7 +169,6 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(
         for row_idx = 1:options.well_counts(1)
             for col_idx = 1:options.well_counts(2)
                 
-                
                 start_i = round(top_y) + (row_idx-1) * well_well_dist_height + options.processing_options.wseg_top_offset;
                 end_i = start_i + options.well_height;
                 start_j = round(left_x) + (col_idx-1) * well_well_dist_width + options.processing_options.wseg_left_offset;
@@ -177,6 +176,40 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(
 
                 mask_final(start_i:end_i, start_j:end_j, frame_idx) = 1;
             end 
+        end
+        
+%         mask_final(end:-1:1, :, frame_idx) = mask_final(:, :, frame_idx);
+        
+        if options.processing_options.wseg_debug
+            figure(1038);clf
+            
+                subtightplot(1,2,1)
+                    hold all
+                    imagesc(cur_frame)
+                    plot(center(1),center(2),'rx','MarkerSize',40,'LineWidth',4)
+                    plot(left_x,top_y,'gx','MarkerSize',40,'LineWidth',4)
+                    
+                    colormap gray
+
+                    axis image
+                    axis equal
+%                     axis off
+                    set(gca,'Ydir','Reverse')  
+                
+                subtightplot(1,2,2)
+                    hold all
+                    imagesc(mask_final(:, :, frame_idx))
+                    plot(center(1),center(2),'rx','MarkerSize',40,'LineWidth',4)
+                    plot(left_x,top_y,'gx','MarkerSize',40,'LineWidth',4)
+                    
+                    colormap gray
+
+                    axis image
+                    axis equal
+%                     axis off
+                    set(gca,'Ydir','Reverse')  
+            
+%             pause
         end
         
         for channel_idx = 1:num_channels
