@@ -1,4 +1,4 @@
-function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(im, options)
+function [well_segmentation_results_struct, im_seg_final] = segment_wells_template(im, options)
 
     im_bf = im(:,:,:,options.bf_channel);
 
@@ -123,7 +123,7 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(
             center_avg_list = [center_avg_list; mean(selected_centers,1)];
             
             all_centers = [all_centers, selected_centers];
-            disp test
+%             disp test
         end
         
         if 0 && options.processing_options.wseg_debug
@@ -161,8 +161,6 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(
         multiWaitbar('Segmenting...',frame_idx/num_frames);
     end
     
-    all_centers
-    
     well_segmentation_results_struct = [];
     
     for frame_idx = 1:num_frames
@@ -177,87 +175,4 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(
         well_segmentation_results_struct.frame(frame_idx).good_objects = objects;
     end
     
-    
-    
-    return
-    
-    multiWaitbar('CloseAll');
-    
-    % make frame-by-frame masks
-    
-    for frame_idx = 1:num_frames
-        
-        center = center_avg_list(frame_idx,:);
-        left_x = center(2) - (options.well_counts(2)/2 * (options.well_width + options.well_spacing_width) + options.well_spacing_width/2);
-        top_y = center(1) - (options.well_counts(1)/2 * (options.well_height + options.well_spacing_height) + options.well_spacing_height/2);
-        
-        for row_idx = 1:options.well_counts(1)
-            for col_idx = 1:options.well_counts(2)
-                try
-                    start_i = round(top_y) + (row_idx-1) * well_well_dist_height + options.processing_options.wseg_top_offset;
-                    end_i = start_i + options.well_height;
-                    start_j = round(left_x) + (col_idx-1) * well_well_dist_width + options.processing_options.wseg_left_offset;
-                    end_j = start_j + options.well_width;
-
-                    mask_final(start_i:end_i, start_j:end_j, frame_idx) = 1;
-                catch E
-                    
-                end
-            end 
-        end
-        
-%         mask_final(end:-1:1, :, frame_idx) = mask_final(:, :, frame_idx);
-        
-        if options.processing_options.wseg_debug
-            figure(1038);clf
-            
-                subtightplot(1,2,1)
-                    hold all
-                    imagesc(cur_frame)
-                    plot(center(1),center(2),'rx','MarkerSize',40,'LineWidth',4)
-                    plot(left_x,top_y,'gx','MarkerSize',40,'LineWidth',4)
-                    
-                    colormap gray
-
-                    axis image
-                    axis equal
-%                     axis off
-                    set(gca,'Ydir','Reverse')  
-                
-                subtightplot(1,2,2)
-                    hold all
-                    imagesc(mask_final(:, :, frame_idx))
-                    plot(center(1),center(2),'rx','MarkerSize',40,'LineWidth',4)
-                    plot(left_x,top_y,'gx','MarkerSize',40,'LineWidth',4)
-                    
-                    colormap gray
-
-                    axis image
-                    axis equal
-%                     axis off
-                    set(gca,'Ydir','Reverse')  
-            
-%             pause
-        end
-        
-        for channel_idx = 1:num_channels
-            im_seg_final(:,:,frame_idx,channel_idx) = im(:,:,frame_idx,channel_idx) .* mask_final(:,:,frame_idx);
-        end
-    end
-    
-    % detect actual wells based on our inferred mask
-    
-    for frame_idx = 1:num_frames
-        L = bwlabeln(mask_final(:,:,frame_idx));
-        objects = regionprops(L,'Centroid','Extrema');
-        
-        if numel(objects) ~= prod(options.well_counts)
-            error('The segmentation did not work properly...')
-        end
-        
-        well_segmentation_results_struct.frame(frame_idx).all_objects = objects;
-        well_segmentation_results_struct.frame(frame_idx).good_objects = objects;
-    end
-    
-%     well_segmentation_results_struct.im_seg_final = im_seg_final;
 end

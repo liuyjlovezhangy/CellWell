@@ -14,7 +14,7 @@ function im_rotate = rotate( im, angle_channel )
     num_frames = size(im,3);
     num_channels = size(im,4);
     
-    for frame_idx = 1:num_frames
+    for frame_idx = 1:min(num_frames,15)
         cur_im = mat2gray(wiener2(im(:,:,frame_idx,angle_channel)));
 %         cur_im = mat2gray(im(:,:,frame_idx,angle_channel));
         
@@ -28,7 +28,7 @@ function im_rotate = rotate( im, angle_channel )
         cur_angle = horizon(cur_im,0.1,'hough');
         angles = [angles, cur_angle];
         
-        multiWaitbar('Detecting rotation angle...',frame_idx/num_frames);
+        multiWaitbar('Detecting rotation angle...',frame_idx/min(num_frames,15));
     end
 
     angle = mean(angles)

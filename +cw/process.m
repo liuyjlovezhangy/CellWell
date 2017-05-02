@@ -96,22 +96,16 @@ function process(options)
         else
             error('Unrecognized well segmentation mode.')
         end
-                
-        if options.ask_me
-            im_combination = [im(:,:,:,options.bf_channel), im_seg_final(:,:,:,options.bf_channel)];
 
-            answer = cw.plot.confirm_results(im_combination(:,:,:),'Well segmentation results.');
-
-            if ~strcmp(answer,'Yes')
-                return
-            end
-        end        
+        fresh_wseg = 1;
         
         disp('Saving well segmentation results...')
         
         save([full_filename '__analysis_results/well_segmentation.mat'],'well_segmentation_results_struct')
     else
         disp('Loading previous well segmentation...')
+        
+        fresh_wseg = 0;
         
         well_segmentation_results_struct = importdata([full_filename '__analysis_results/well_segmentation.mat']);
     end
@@ -125,7 +119,22 @@ function process(options)
         
     well_tracking_results_struct = cw.process.track_wells( im, well_segmentation_results_struct, options );
     
-    if options.export_tifs
+    if options.ask_me && fresh_wseg
+
+        im_bf_all = cell(1,numel(well_tracking_results_struct.wells));
+        
+        for well_idx = 1:numel(well_tracking_results_struct.wells)
+            im_bf_all{well_idx} = well_tracking_results_struct.wells(well_idx).im_well(:,:,:,options.bf_channel);
+        end
+        
+        answer = cw.plot.confirm_results(im_bf_all,'Well segmentation results.');
+
+        if ~strcmp(answer,'Yes')
+            return
+        end
+    end       
+    
+    if options.export_tifs && fresh_wseg
         disp('Writing well tifs...')
         
         delete([full_filename '__analysis_results/well_im_*'])
@@ -139,22 +148,6 @@ function process(options)
         end
     end
     
-%     if propts.start_at <= 2 || ~exist([full_filename '__analysis_results/well_tracking.mat'],'file')
-%     
-%         disp('Performing well tracking...')
-%         
-%         well_tracking_results_struct = cw.process.track_wells( im, well_segmentation_results_struct, options );
-%     
-%         disp('Saving well tracking results...')
-%         
-%         save([full_filename '__analysis_results/well_tracking.mat'],'well_tracking_results_struct','-v7.3')
-% 
-%     else
-%         disp('Loading previous well tracking...')
-%         
-%         well_tracking_results_struct = importdata([full_filename '__analysis_results/well_tracking.mat']);
-%     end
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Well-by-well detection of signal presence
     
@@ -164,14 +157,14 @@ function process(options)
 
         [signal_detection_results_struct,validation_images] = cw.process.detect_noise( well_tracking_results_struct, options );
         
-        if options.ask_me
-
-            answer = cw.plot.confirm_results(validation_images,'Noise detection results.');
-
-            if ~strcmp(answer,'Yes')
-                return
-            end
-        end
+%         if options.ask_me
+% 
+%             answer = cw.plot.confirm_results(validation_images,'Noise detection results.');
+% 
+%             if ~strcmp(answer,'Yes')
+%                 return
+%             end
+%         end
         
         disp('Saving signal detection results....')
         
@@ -248,15 +241,17 @@ function process(options)
         disp('Saving cell segmentation results....')
         
         save([full_filename '__analysis_results/cell_segmentation.mat'],'cell_segmentation_results_struct')
+        fresh_cseg = 1;
 
     else
         disp('Loading previous cell segmentation data...')
         
         cell_segmentation_results_struct = importdata([full_filename '__analysis_results/cell_segmentation.mat']);
         
+        fresh_cseg = 0;
     end
 
-    if options.export_tifs
+    if options.export_tifs && fresh_cseg
         disp('Writing cell segmentation tifs...')
         
         delete([full_filename '__analysis_results/cell_seg_im_*'])

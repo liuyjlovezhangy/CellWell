@@ -35,27 +35,27 @@ function [signal_detection_results_struct, validation_images] = detect_noise( we
             % add this to the validation images cell so we can plot later
             % to see if user wants to keep this result
             
-            if options.ask_me
-                scale = 0.1;
-                
-                for frame_idx = 1:num_frames
-                    if is_noise_matrix(well_idx,channel_idx,frame_idx)
-                        valim = cat(3,im_well(:,:,frame_idx,channel_idx),zeros(size(im_well,1),size(im_well,2)),scale*ones(size(im_well,1),size(im_well,2)));
-                    else
-                        valim = cat(3,im_well(:,:,frame_idx,channel_idx),scale*ones(size(im_well,1),size(im_well,2)),zeros(size(im_well,1),size(im_well,2)));
-                    end
-
-                    [well_i,well_j] = ind2sub(options.well_counts,well_idx);
-
-                    i = 1 + (well_i-1) * options.well_height;
-                    i_end = well_i * options.well_height;
-
-                    j = 1 + (well_j-1) * options.well_width;
-                    j_end = well_j * options.well_width;
-
-                    validation_images{channel_idx}(i:i_end,j:j_end,frame_idx,:) = valim;
-                end
-            end
+%             if options.ask_me
+%                 scale = 0.1;
+%                 
+%                 for frame_idx = 1:num_frames
+%                     if is_noise_matrix(well_idx,channel_idx,frame_idx)
+%                         valim = cat(3,im_well(:,:,frame_idx,channel_idx),zeros(size(im_well,1),size(im_well,2)),scale*ones(size(im_well,1),size(im_well,2)));
+%                     else
+%                         valim = cat(3,im_well(:,:,frame_idx,channel_idx),scale*ones(size(im_well,1),size(im_well,2)),zeros(size(im_well,1),size(im_well,2)));
+%                     end
+% 
+%                     [well_i,well_j] = ind2sub(options.well_counts,well_idx);
+% 
+%                     i = 1 + (well_i-1) * options.well_height;
+%                     i_end = well_i * options.well_height;
+% 
+%                     j = 1 + (well_j-1) * options.well_width;
+%                     j_end = well_j * options.well_width;
+% 
+%                     validation_images{channel_idx}(i:i_end,j:j_end,frame_idx,:) = valim;
+%                 end
+%             end
         end
 
         detection_images{well_idx} = cur_detection_image;

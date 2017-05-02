@@ -1,13 +1,13 @@
 function nuclei_cfg
 
-    options.filename = 'movies/Farid_test-02(1)_NEW.tif';
+    options.filename = 'movies/Farid_test-02(6)-2.tif';
     
     movie_name = strrep(options.filename,'/','__');
     
     %%% RUNNING MODE
     
-    options.DO_PROCESSING = 0;
-    options.DO_ANALYSIS = 1;
+    options.DO_PROCESSING = 1;
+    options.DO_ANALYSIS = 0;
     options.DO_PLOTTING = 0;
     
     options.NUKE_IT = 0; %%% DESTROY ALL OLD OUTPUT DATA/MOVIES INCL OLD RUNS
@@ -16,7 +16,9 @@ function nuclei_cfg
     options.ask_me = 1; %%% Ask user if the results look good after registration, segmentation, etc.
     
     options.first_frame = 1;
-    options.last_frame = 40; %%% Only process through <n> frames
+    options.last_frame = 50; %%% Only process through <n> frames
+    
+    options.export_tifs = 1;
     
     %%% Info related to movie
     
@@ -60,11 +62,11 @@ function nuclei_cfg
     %%% What part of the processing would you like to start from?
     % Uncomment the line you are interested in (and comment out others)
     
-%      processing_options.start_at = 0;
+    processing_options.start_at = 0;
 %     processing_options.start_at = 'well segmentation';
 %     processing_options.start_at = 'well tracking';
 %     processing_options.start_at = 'noise detection';
-    processing_options.start_at = 'cell segmentation';
+%     processing_options.start_at = 'cell segmentation';
 %     processing_options.start_at = 'cell tracking';
 %     processing_options.start_at = 'next';
     
@@ -78,8 +80,6 @@ function nuclei_cfg
     processing_options.wseg_debug = 0;
     processing_options.wseg_mode = 'template';
     processing_options.wseg_template = 'well_templates/wt_default.tif';
-    processing_options.wseg_left_offset = 5;
-    processing_options.wseg_top_offset = 5;
     
     %%% Cell segmentation mode
     
@@ -159,10 +159,10 @@ function nuclei_cfg
     %%% Cell tracking parameters
     
     processing_options.ctrk_mode = 'conservative';
-    processing_options.ctrk_searchrad = 10;
+    processing_options.ctrk_searchrad = inf;
     processing_options.ctrk_gap_close = 0;
     
-    processing_options.ctrk_min_track_len = 3;
+    processing_options.min_track_len = 3;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

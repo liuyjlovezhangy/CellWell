@@ -116,7 +116,7 @@ function cw_main(options_file)
 
         mats = {'input_movie.mat','well_segmentation.mat',...
             'well_tracking.mat','noise_detection.mat','cell_segmentation.mat',...
-            'cell_tracking.mat'};
+            'cell_tracking.mat','cell_interactions.mat'};
 
         mats_to_delete = mats((new_sa+1):5);
 
