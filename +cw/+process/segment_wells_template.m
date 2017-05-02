@@ -33,6 +33,8 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(
     
     center_avg_list = [];
     
+    all_centers = {};
+    
     for frame_idx = 1:num_frames
         
         cur_frame = im_bf(:,:,frame_idx);
@@ -119,6 +121,9 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(
             selected_centers = centers(top_idcs,:);
 
             center_avg_list = [center_avg_list; mean(selected_centers,1)];
+            
+            all_centers = [all_centers, selected_centers];
+            disp test
         end
         
         if 0 && options.processing_options.wseg_debug
@@ -156,6 +161,26 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(
         multiWaitbar('Segmenting...',frame_idx/num_frames);
     end
     
+    all_centers
+    
+    well_segmentation_results_struct = [];
+    
+    for frame_idx = 1:num_frames
+        cur_centers = all_centers{frame_idx};
+        
+        objects = [];
+        
+        for obj_idx = 1:size(cur_centers,1)
+            objects(obj_idx).Centroid = cur_centers(obj_idx,:);
+        end
+        
+        well_segmentation_results_struct.frame(frame_idx).good_objects = objects;
+    end
+    
+    
+    
+    return
+    
     multiWaitbar('CloseAll');
     
     % make frame-by-frame masks
@@ -168,13 +193,16 @@ function [well_segmentation_results_struct, im_seg_final] = segment_wells_otsu2(
         
         for row_idx = 1:options.well_counts(1)
             for col_idx = 1:options.well_counts(2)
-                
-                start_i = round(top_y) + (row_idx-1) * well_well_dist_height + options.processing_options.wseg_top_offset;
-                end_i = start_i + options.well_height;
-                start_j = round(left_x) + (col_idx-1) * well_well_dist_width + options.processing_options.wseg_left_offset;
-                end_j = start_j + options.well_width;
+                try
+                    start_i = round(top_y) + (row_idx-1) * well_well_dist_height + options.processing_options.wseg_top_offset;
+                    end_i = start_i + options.well_height;
+                    start_j = round(left_x) + (col_idx-1) * well_well_dist_width + options.processing_options.wseg_left_offset;
+                    end_j = start_j + options.well_width;
 
-                mask_final(start_i:end_i, start_j:end_j, frame_idx) = 1;
+                    mask_final(start_i:end_i, start_j:end_j, frame_idx) = 1;
+                catch E
+                    
+                end
             end 
         end
         
