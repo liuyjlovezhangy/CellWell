@@ -44,9 +44,7 @@ function nuclei_cfg
     
     options.well_counts = [6,6]; % #rows x #cols
     options.well_width = 69;
-    options.well_spacing_width = 4;
     options.well_height = 72;
-    options.well_spacing_height = 2;
     
     % cell information
     

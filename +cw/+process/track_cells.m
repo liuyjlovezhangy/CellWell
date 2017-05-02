@@ -1,7 +1,5 @@
 function cell_tracking_results_struct = track_cells( cell_segmentation_results_struct, options )
 
-    warning('something is really broken here for the 1 cell example movie...')
-
     propts = options.processing_options;
 
     num_wells = numel(cell_segmentation_results_struct.cell_masks);
